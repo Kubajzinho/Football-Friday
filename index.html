@@ -3,155 +3,268 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Friday Football</title>
+
+<title>Football Team Generator</title>
 
 <style>
-body {
-    font-family: Arial, sans-serif;
-    max-width: 800px;
-    margin: 20px auto;
-    padding: 20px;
-    background: #111827;
-    color: #f9fafb;
+body{
+    font-family:Arial,sans-serif;
+    max-width:900px;
+    margin:auto;
+    padding:20px;
+    background:#f3f3f3;
 }
 
-.card {
-    background: #1f2937;
-    padding: 15px;
-    border-radius: 12px;
-    margin-bottom: 15px;
+.card{
+    background:white;
+    padding:15px;
+    margin-bottom:15px;
+    border-radius:10px;
 }
 
-button {
-    padding: 10px 15px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    background: #22c55e;
-    color: white;
-    font-weight: bold;
+button{
+    padding:10px 15px;
+    border:none;
+    border-radius:6px;
+    background:#007aff;
+    color:white;
+    cursor:pointer;
 }
 
-button:hover {
-    background: #16a34a;
+input,select{
+    padding:8px;
 }
 
-input {
-    padding: 8px;
-    margin-right: 5px;
-    background: #374151;
-    color: white;
-    border: none;
-    border-radius: 8px;
+.player{
+    display:flex;
+    justify-content:space-between;
+    margin:5px 0;
 }
 
-.player {
-    display: flex;
-    justify-content: space-between;
-    margin: 8px 0;
-}
-
-.team {
-    background: #1f2937;
-    padding: 15px;
-    border-radius: 12px;
-    width: 45%;
-}
-
-.teams {
-    display: flex;
-    justify-content: space-between;
-    gap: 20px;
+.team{
+    background:white;
+    border-radius:10px;
+    padding:15px;
+    margin-top:10px;
 }
 </style>
 </head>
 
 <body>
 
-<h1>⚽ Friday Football</h1>
+<h1>⚽ Football Team Generator</h1>
 
 <div class="card">
-    <h3>Přidat hráče</h3>
 
-    <input id="name" placeholder="Jméno">
-    <input id="rating" type="number" placeholder="Rating">
-    <button onclick="addPlayer()">Přidat</button>
+<h3>Přidat hráče</h3>
+
+<input id="name" placeholder="Jméno">
+
+<select id="rating">
+<option>0</option>
+<option>0.5</option>
+<option>1</option>
+<option>1.5</option>
+<option>2</option>
+<option>2.5</option>
+<option>3</option>
+<option>3.5</option>
+<option>4</option>
+<option>4.5</option>
+<option selected>5</option>
+</select>
+
+<button onclick="addPlayer()">Přidat</button>
+
 </div>
 
 <div class="card">
-    <h3>Hráči</h3>
-    <div id="players"></div>
+<h3>Databáze hráčů</h3>
+<div id="players"></div>
 </div>
 
 <div class="card">
-    <button onclick="generateTeams()">Rozdělit týmy</button>
+<button onclick="generateTeams()">🎲 Vylosovat týmy</button>
 </div>
 
-<div id="result"></div>
+<div id="teams"></div>
 
 <script>
 
-let players = JSON.parse(localStorage.getItem("players")) || [];
+let players =
+JSON.parse(localStorage.getItem("players")) || [];
 
-function savePlayers() {
-    localStorage.setItem("players", JSON.stringify(players));
+function savePlayers(){
+    localStorage.setItem(
+        "players",
+        JSON.stringify(players)
+    );
 }
 
-function addPlayer() {
-    const name = document.getElementById("name").value;
-    const rating = Number(document.getElementById("rating").value);
+function addPlayer(){
 
-    if (!name || !rating) return;
+    let name =
+    document.getElementById("name").value.trim();
+
+    let rating =
+    parseFloat(document.getElementById("rating").value);
+
+    if(!name) return;
 
     players.push({
-        name,
-        rating,
-        present: true
+        name:name,
+        rating:rating,
+        active:false
     });
 
     savePlayers();
     renderPlayers();
 
-    document.getElementById("name").value = "";
-    document.getElementById("rating").value = "";
+    document.getElementById("name").value="";
 }
 
-function removePlayer(index) {
-    players.splice(index, 1);
+function deletePlayer(index){
+
+    if(confirm("Smazat hráče?")){
+        players.splice(index,1);
+        savePlayers();
+        renderPlayers();
+    }
+}
+
+function togglePlayer(index){
+
+    players[index].active =
+    !players[index].active;
+
     savePlayers();
-    renderPlayers();
 }
 
-function renderPlayers() {
-    const container = document.getElementById("players");
+function renderPlayers(){
 
-    container.innerHTML = players.map((p, i) => `
-        <div class="player">
-            <span>
-                <input type="checkbox"
-                    ${p.present ? "checked" : ""}
-                    onchange="togglePresent(${i})">
+    document.getElementById("players").innerHTML =
+    players.map((p,i)=>`
 
-                ${p.name} (${p.rating})
-            </span>
+    <div class="player">
 
-            <button onclick="removePlayer(${i})">
-                Smazat
-            </button>
-        </div>
+        <span>
+        <input
+        type="checkbox"
+        ${p.active ? "checked" : ""}
+        onchange="togglePlayer(${i})">
+
+        ${p.name}
+        (Rating ${p.rating})
+        </span>
+
+        <button
+        onclick="deletePlayer(${i})">
+        Smazat
+        </button>
+
+    </div>
+
     `).join("");
 }
 
-function togglePresent(i){
-    players[i].present = !players[i].present;
-    savePlayers();
+function shuffle(array){
+
+    const arr=[...array];
+
+    for(let i=arr.length-1;i>0;i--){
+
+        const j=Math.floor(
+            Math.random()*(i+1)
+        );
+
+        [arr[i],arr[j]]=
+        [arr[j],arr[i]];
+    }
+
+    return arr;
 }
 
-function generateTeams() {
+function generateTeams(){
 
-    const present = players.filter(p => p.present);
+    let active =
+    players.filter(p=>p.active);
 
-    if (present.length !== 6) {
-        alert("Pro tuto verzi vyber přesně 6 hráčů.");
+    let count = active.length;
+
+    let teamCount = 0;
+
+    if(count===6){
+        teamCount=2;
+    }
+    else if(count===8){
+        teamCount=2;
+    }
+    else if(count===9){
+        teamCount=3;
+    }
+    else{
+        alert(
+        "Vyber přesně 6, 8 nebo 9 hráčů."
+        );
         return;
- 
+    }
+
+    active.sort(
+        (a,b)=>b.rating-a.rating
+    );
+
+    let teams=[];
+
+    for(let i=0;i<teamCount;i++){
+        teams.push([]);
+    }
+
+    let totals =
+    new Array(teamCount).fill(0);
+
+    active.forEach(player=>{
+
+        let minIndex = 0;
+
+        for(let i=1;i<teamCount;i++){
+
+            if(totals[i] < totals[minIndex]){
+                minIndex=i;
+            }
+        }
+
+        teams[minIndex].push(player);
+        totals[minIndex]+=player.rating;
+    });
+
+    let html="<h2>Výsledek</h2>";
+
+    teams.forEach((team,index)=>{
+
+        let total =
+        team.reduce(
+        (sum,p)=>sum+p.rating,0);
+
+        html+=`
+        <div class="team">
+        <h3>Tým ${String.fromCharCode(65+index)}
+        (${total.toFixed(1)})</h3>
+        <ul>
+        ${team.map(
+            p=>`<li>${p.name} (${p.rating})</li>`
+        ).join("")}
+        </ul>
+        </div>
+        `;
+    });
+
+    document.getElementById("teams").innerHTML =
+    html;
+}
+
+renderPlayers();
+
+</script>
+
+</body>
+</html>
