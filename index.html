@@ -4,267 +4,118 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Football Team Generator</title>
+<title>Friday Football</title>
 
 <style>
+
 body{
     font-family:Arial,sans-serif;
     max-width:900px;
     margin:auto;
     padding:20px;
-    background:#f3f3f3;
+    background:#111827;
+    color:#f9fafb;
 }
 
 .card{
-    background:white;
+    background:#1f2937;
     padding:15px;
     margin-bottom:15px;
-    border-radius:10px;
+    border-radius:12px;
+}
+
+h1,h2,h3{
+    margin-top:0;
 }
 
 button{
     padding:10px 15px;
     border:none;
-    border-radius:6px;
-    background:#007aff;
+    border-radius:10px;
+    background:#22c55e;
     color:white;
     cursor:pointer;
+    font-weight:bold;
+}
+
+button:hover{
+    background:#16a34a;
 }
 
 input,select{
     padding:8px;
+    border:none;
+    border-radius:8px;
+    background:#374151;
+    color:white;
 }
 
 .player{
     display:flex;
     justify-content:space-between;
-    margin:5px 0;
+    align-items:center;
+    margin:8px 0;
+    padding:6px 0;
 }
 
 .team{
-    background:white;
-    border-radius:10px;
+    background:#1f2937;
+    border-radius:12px;
     padding:15px;
     margin-top:10px;
 }
+
+.ratingSelect{
+    margin-right:10px;
+}
+
+.tabs{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+ul{
+    padding-left:20px;
+}
+
 </style>
+
 </head>
 
 <body>
 
-<h1>⚽ Football Team Generator</h1>
+<h1>⚽ Friday Football</h1>
 
-<div class="card">
+<div class="card tabs">
 
-<h3>Přidat hráče</h3>
+    <button onclick="showTab('teams')">
+        Losování týmů
+    </button>
 
-<input id="name" placeholder="Jméno">
-
-<select id="rating">
-<option>0</option>
-<option>0.5</option>
-<option>1</option>
-<option>1.5</option>
-<option>2</option>
-<option>2.5</option>
-<option>3</option>
-<option>3.5</option>
-<option>4</option>
-<option>4.5</option>
-<option selected>5</option>
-</select>
-
-<button onclick="addPlayer()">Přidat</button>
+    <button onclick="showTab('players')">
+        Databáze hráčů
+    </button>
 
 </div>
 
-<div class="card">
-<h3>Databáze hráčů</h3>
-<div id="players"></div>
-</div>
+<div id="playersTab">
 
-<div class="card">
-<button onclick="generateTeams()">🎲 Vylosovat týmy</button>
-</div>
+    <div class="card">
 
-<div id="teams"></div>
+        <h3>Přidat hráče</h3>
 
-<script>
+        <input id="name" placeholder="Jméno">
 
-let players =
-JSON.parse(localStorage.getItem("players")) || [];
-
-function savePlayers(){
-    localStorage.setItem(
-        "players",
-        JSON.stringify(players)
-    );
-}
-
-function addPlayer(){
-
-    let name =
-    document.getElementById("name").value.trim();
-
-    let rating =
-    parseFloat(document.getElementById("rating").value);
-
-    if(!name) return;
-
-    players.push({
-        name:name,
-        rating:rating,
-        active:false
-    });
-
-    savePlayers();
-    renderPlayers();
-
-    document.getElementById("name").value="";
-}
-
-function deletePlayer(index){
-
-    if(confirm("Smazat hráče?")){
-        players.splice(index,1);
-        savePlayers();
-        renderPlayers();
-    }
-}
-
-function togglePlayer(index){
-
-    players[index].active =
-    !players[index].active;
-
-    savePlayers();
-}
-
-function renderPlayers(){
-
-    document.getElementById("players").innerHTML =
-    players.map((p,i)=>`
-
-    <div class="player">
-
-        <span>
-        <input
-        type="checkbox"
-        ${p.active ? "checked" : ""}
-        onchange="togglePlayer(${i})">
-
-        ${p.name}
-        (Rating ${p.rating})
-        </span>
-
-        <button
-        onclick="deletePlayer(${i})">
-        Smazat
-        </button>
-
-    </div>
-
-    `).join("");
-}
-
-function shuffle(array){
-
-    const arr=[...array];
-
-    for(let i=arr.length-1;i>0;i--){
-
-        const j=Math.floor(
-            Math.random()*(i+1)
-        );
-
-        [arr[i],arr[j]]=
-        [arr[j],arr[i]];
-    }
-
-    return arr;
-}
-
-function generateTeams(){
-
-    let active =
-    players.filter(p=>p.active);
-
-    let count = active.length;
-
-    let teamCount = 0;
-
-    if(count===6){
-        teamCount=2;
-    }
-    else if(count===8){
-        teamCount=2;
-    }
-    else if(count===9){
-        teamCount=3;
-    }
-    else{
-        alert(
-        "Vyber přesně 6, 8 nebo 9 hráčů."
-        );
-        return;
-    }
-
-    active.sort(
-        (a,b)=>b.rating-a.rating
-    );
-
-    let teams=[];
-
-    for(let i=0;i<teamCount;i++){
-        teams.push([]);
-    }
-
-    let totals =
-    new Array(teamCount).fill(0);
-
-    active.forEach(player=>{
-
-        let minIndex = 0;
-
-        for(let i=1;i<teamCount;i++){
-
-            if(totals[i] < totals[minIndex]){
-                minIndex=i;
-            }
-        }
-
-        teams[minIndex].push(player);
-        totals[minIndex]+=player.rating;
-    });
-
-    let html="<h2>Výsledek</h2>";
-
-    teams.forEach((team,index)=>{
-
-        let total =
-        team.reduce(
-        (sum,p)=>sum+p.rating,0);
-
-        html+=`
-        <div class="team">
-        <h3>Tým ${String.fromCharCode(65+index)}
-        (${total.toFixed(1)})</h3>
-        <ul>
-        ${team.map(
-            p=>`<li>${p.name} (${p.rating})</li>`
-        ).join("")}
-        </ul>
-        </div>
-        `;
-    });
-
-    document.getElementById("teams").innerHTML =
-    html;
-}
-
-renderPlayers();
-
-</script>
-
-</body>
-</html>
+        <select id="rating">
+            <option>0</option>
+            <option>0.5</option>
+            <option>1</option>
+            <option>1.5</option>
+            <option>2</option>
+            <option>2.5</option>
+            <option>3</option>
+            <option>3.5</option>
+            <option>4</option>
+            <option>4.5</option>
+            <option selected>5</option
