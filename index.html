@@ -3,37 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Friday Football</title>
 
 <style>
-
 body{
+    margin:0;
     font-family:Arial,sans-serif;
+    background:#111827;
+    color:white;
+}
+
+.container{
     max-width:900px;
     margin:auto;
     padding:20px;
-    background:#111827;
-    color:#f9fafb;
 }
 
 .card{
     background:#1f2937;
+    border-radius:12px;
     padding:15px;
     margin-bottom:15px;
-    border-radius:12px;
-}
-
-h1,h2,h3{
-    margin-top:0;
 }
 
 button{
-    padding:10px 15px;
-    border:none;
-    border-radius:10px;
     background:#22c55e;
     color:white;
+    border:none;
+    padding:10px 15px;
+    border-radius:10px;
     cursor:pointer;
     font-weight:bold;
 }
@@ -43,19 +41,25 @@ button:hover{
 }
 
 input,select{
-    padding:8px;
-    border:none;
-    border-radius:8px;
     background:#374151;
     color:white;
+    border:none;
+    border-radius:8px;
+    padding:8px;
+}
+
+.tabs{
+    display:flex;
+    gap:10px;
+    margin-bottom:15px;
 }
 
 .player{
     display:flex;
     justify-content:space-between;
     align-items:center;
-    margin:8px 0;
-    padding:6px 0;
+    padding:8px 0;
+    border-bottom:1px solid #374151;
 }
 
 .team{
@@ -65,57 +69,9 @@ input,select{
     margin-top:10px;
 }
 
-.ratingSelect{
-    margin-right:10px;
+.hidden{
+    display:none;
 }
 
-.tabs{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-}
-
-ul{
-    padding-left:20px;
-}
-
-</style>
-
-</head>
-
-<body>
-
-<h1>⚽ Friday Football</h1>
-
-<div class="card tabs">
-
-    <button onclick="showTab('teams')">
-        Losování týmů
-    </button>
-
-    <button onclick="showTab('players')">
-        Databáze hráčů
-    </button>
-
-</div>
-
-<div id="playersTab">
-
-    <div class="card">
-
-        <h3>Přidat hráče</h3>
-
-        <input id="name" placeholder="Jméno">
-
-        <select id="rating">
-            <option>0</option>
-            <option>0.5</option>
-            <option>1</option>
-            <option>1.5</option>
-            <option>2</option>
-            <option>2.5</option>
-            <option>3</option>
-            <option>3.5</option>
-            <option>4</option>
-            <option>4.5</option>
-            <option selected>5</option
+.rating{
+    margin-right:
