@@ -6,72 +6,152 @@
 <title>Friday Football</title>
 
 <style>
-body{
-    margin:0;
-    font-family:Arial,sans-serif;
-    background:#111827;
-    color:white;
+body {
+    font-family: Arial, sans-serif;
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background: #111827;
+    color: #f9fafb;
 }
 
-.container{
-    max-width:900px;
-    margin:auto;
-    padding:20px;
+.card {
+    background: #1f2937;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 15px;
 }
 
-.card{
-    background:#1f2937;
-    border-radius:12px;
-    padding:15px;
-    margin-bottom:15px;
+button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    background: #22c55e;
+    color: white;
+    font-weight: bold;
 }
 
-button{
-    background:#22c55e;
-    color:white;
-    border:none;
-    padding:10px 15px;
-    border-radius:10px;
-    cursor:pointer;
-    font-weight:bold;
+button:hover {
+    background: #16a34a;
 }
 
-button:hover{
-    background:#16a34a;
+input {
+    padding: 8px;
+    margin-right: 5px;
+    background: #374151;
+    color: white;
+    border: none;
+    border-radius: 8px;
 }
 
-input,select{
-    background:#374151;
-    color:white;
-    border:none;
-    border-radius:8px;
-    padding:8px;
+.player {
+    display: flex;
+    justify-content: space-between;
+    margin: 8px 0;
 }
 
-.tabs{
-    display:flex;
-    gap:10px;
-    margin-bottom:15px;
+.team {
+    background: #1f2937;
+    padding: 15px;
+    border-radius: 12px;
+    width: 45%;
 }
 
-.player{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:8px 0;
-    border-bottom:1px solid #374151;
+.teams {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>⚽ Friday Football</h1>
+
+<div class="card">
+    <h3>Přidat hráče</h3>
+
+    <input id="name" placeholder="Jméno">
+    <input id="rating" type="number" placeholder="Rating">
+    <button onclick="addPlayer()">Přidat</button>
+</div>
+
+<div class="card">
+    <h3>Hráči</h3>
+    <div id="players"></div>
+</div>
+
+<div class="card">
+    <button onclick="generateTeams()">Rozdělit týmy</button>
+</div>
+
+<div id="result"></div>
+
+<script>
+
+let players = JSON.parse(localStorage.getItem("players")) || [];
+
+function savePlayers() {
+    localStorage.setItem("players", JSON.stringify(players));
 }
 
-.team{
-    background:#1f2937;
-    border-radius:12px;
-    padding:15px;
-    margin-top:10px;
+function addPlayer() {
+    const name = document.getElementById("name").value;
+    const rating = Number(document.getElementById("rating").value);
+
+    if (!name || !rating) return;
+
+    players.push({
+        name,
+        rating,
+        present: true
+    });
+
+    savePlayers();
+    renderPlayers();
+
+    document.getElementById("name").value = "";
+    document.getElementById("rating").value = "";
 }
 
-.hidden{
-    display:none;
+function removePlayer(index) {
+    players.splice(index, 1);
+    savePlayers();
+    renderPlayers();
 }
 
-.rating{
-    margin-right:
+function renderPlayers() {
+    const container = document.getElementById("players");
+
+    container.innerHTML = players.map((p, i) => `
+        <div class="player">
+            <span>
+                <input type="checkbox"
+                    ${p.present ? "checked" : ""}
+                    onchange="togglePresent(${i})">
+
+                ${p.name} (${p.rating})
+            </span>
+
+            <button onclick="removePlayer(${i})">
+                Smazat
+            </button>
+        </div>
+    `).join("");
+}
+
+function togglePresent(i){
+    players[i].present = !players[i].present;
+    savePlayers();
+}
+
+function generateTeams() {
+
+    const present = players.filter(p => p.present);
+
+    if (present.length !== 6) {
+        alert("Pro tuto verzi vyber přesně 6 hráčů.");
+        return;
+ 
