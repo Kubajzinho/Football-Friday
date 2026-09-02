@@ -1,1274 +1,825 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import {
-  Users,
-  Plus,
-  Trash2,
-  Shuffle,
-  Shield,
-  Trophy,
-  Activity,
-  Star,
-  RefreshCw,
-  Clock,
-  Play,
-  Pause,
-  RotateCcw,
-  CheckCircle2,
-  TrendingUp,
-  Share2,
-  Check,
-  Volume2,
-  VolumeX,
-  Timer,
-  Hourglass,
-  Sun,
-  Moon,
-  Send,
-  Download,
-  Upload,
-  Info,
-  X,
-  Calendar,
-  AlertCircle
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Friday Football" />
+  <title>Friday Football</title>
 
-// ==========================================
-// 1. TYPY A ROZHRANÍ
-// ==========================================
-export interface PlayerStats {
-  matches: number;
-  wins: number;
-  draws: number;
-  losses: number;
-  goalsFor?: number;
-  goalsAgainst?: number;
-}
+  <!-- React 18 & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel pro JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-export interface Player {
-  id: string;
-  name: string;
-  rating: number;
-  active: boolean;
-  stats?: PlayerStats;
-}
-
-export interface GeneratedTeam {
-  id: string;
-  name: string;
-  players: Player[];
-  totalRating: number;
-}
-
-export type MatchStatus = 'upcoming' | 'in_progress' | 'finished';
-
-export interface Match {
-  id: string;
-  matchNumber: number;
-  teamAId: string;
-  teamAName: string;
-  teamBId: string;
-  teamBName: string;
-  teamAScore: number;
-  teamBScore: number;
-  status: MatchStatus;
-  restingTeamName?: string;
-  kickoffAt?: string;
-  startedAt?: string;
-  finishedAt?: string;
-  durationSeconds?: number;
-  teamAPlayerIds: string[];
-  teamBPlayerIds: string[];
-}
-
-export interface AppStateData {
-  players: Player[];
-  teams: GeneratedTeam[];
-  matches: Match[];
-  exportedAt?: string;
-  version?: number;
-}
-
-type ActiveTab = 'players' | 'generator' | 'matches' | 'stats';
-
-const RATING_OPTIONS = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
-
-const INITIAL_PLAYERS: Player[] = [
-  { id: 'p-1', name: 'Petr', rating: 4.5, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
-  { id: 'p-2', name: 'Honza', rating: 4.0, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
-  { id: 'p-3', name: 'Michal', rating: 3.5, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
-  { id: 'p-4', name: 'Tomáš', rating: 3.5, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
-  { id: 'p-5', name: 'David', rating: 3.0, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
-  { id: 'p-6', name: 'Lukáš', rating: 3.0, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
-  { id: 'p-7', name: 'Martin', rating: 2.5, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
-  { id: 'p-8', name: 'Jakub', rating: 2.5, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
-  { id: 'p-9', name: 'Ondra', rating: 2.0, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
-  { id: 'p-10', name: 'Filip', rating: 2.0, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
-];
-
-// ==========================================
-// 2. ZVUKOVÉ EFEKTY (WEB AUDIO API)
-// ==========================================
-class SoundEffects {
-  private audioCtx: AudioContext | null = null;
-
-  private getContext(): AudioContext | null {
-    if (typeof window === 'undefined') return null;
-    if (!this.audioCtx) {
-      const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioCtxClass) this.audioCtx = new AudioCtxClass();
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {}
+      }
     }
-    if (this.audioCtx && this.audioCtx.state === 'suspended') {
-      this.audioCtx.resume().catch(() => {});
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide-react@latest"></script>
+
+  <style>
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
     }
-    return this.audioCtx;
-  }
+    input, select {
+      user-select: auto;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div id="root"></div>
 
-  playWhistle() {
-    try {
-      const ctx = this.getContext();
-      if (!ctx) return;
-      const now = ctx.currentTime;
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo } = React;
+    const { 
+      Users, Plus, Trash2, Shuffle, Trophy, Clock, 
+      Play, Pause, RotateCcw, CheckCircle2, Share2, 
+      Volume2, VolumeX, Timer, Hourglass, Sun, Moon, 
+      Send, X, Calendar 
+    } = lucide;
 
-      const playBurst = (startTime: number, duration: number) => {
-        const osc1 = ctx.createOscillator();
-        const osc2 = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const lfo = ctx.createOscillator();
-        const lfoGain = ctx.createGain();
+    // --- ZVUKOVÉ EFEKTY (WEB AUDIO API - PÍŠŤALKA + PÍPNUTÍ) ---
+    class SoundEffects {
+      constructor() {
+        this.audioCtx = null;
+      }
 
-        lfo.frequency.setValueAtTime(32, startTime);
-        lfoGain.gain.setValueAtTime(60, startTime);
-        lfo.connect(osc1.frequency);
-        lfo.connect(osc2.frequency);
+      getContext() {
+        if (typeof window === 'undefined') return null;
+        if (!this.audioCtx) {
+          const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtxClass) this.audioCtx = new AudioCtxClass();
+        }
+        if (this.audioCtx && this.audioCtx.state === 'suspended') {
+          this.audioCtx.resume().catch(() => {});
+        }
+        return this.audioCtx;
+      }
 
-        osc1.type = 'sine';
-        osc2.type = 'triangle';
-        osc1.frequency.setValueAtTime(2450, startTime);
-        osc2.frequency.setValueAtTime(2750, startTime);
+      playWhistle() {
+        try {
+          const ctx = this.getContext();
+          if (!ctx) return;
+          const now = ctx.currentTime;
 
-        gain.gain.setValueAtTime(0, startTime);
-        gain.gain.linearRampToValueAtTime(0.35, startTime + 0.04);
-        gain.gain.setValueAtTime(0.35, startTime + duration - 0.05);
-        gain.gain.linearRampToValueAtTime(0, startTime + duration);
+          const playBurst = (startTime, duration) => {
+            const osc1 = ctx.createOscillator();
+            const osc2 = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const lfo = ctx.createOscillator();
+            const lfoGain = ctx.createGain();
 
-        osc1.connect(gain);
-        osc2.connect(gain);
-        gain.connect(ctx.destination);
+            lfo.frequency.setValueAtTime(32, startTime);
+            lfoGain.gain.setValueAtTime(60, startTime);
+            lfo.connect(osc1.frequency);
+            lfo.connect(osc2.frequency);
 
-        lfo.start(startTime);
-        osc1.start(startTime);
-        osc2.start(startTime);
-        lfo.stop(startTime + duration);
-        osc1.stop(startTime + duration);
-        osc2.stop(startTime + duration);
+            osc1.type = 'sine';
+            osc2.type = 'triangle';
+            osc1.frequency.setValueAtTime(2450, startTime);
+            osc2.frequency.setValueAtTime(2750, startTime);
+
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.35, startTime + 0.04);
+            gain.gain.setValueAtTime(0.35, startTime + duration - 0.05);
+            gain.gain.linearRampToValueAtTime(0, startTime + duration);
+
+            osc1.connect(gain);
+            osc2.connect(gain);
+            gain.connect(ctx.destination);
+
+            lfo.start(startTime);
+            osc1.start(startTime);
+            osc2.start(startTime);
+            lfo.stop(startTime + duration);
+            osc1.stop(startTime + duration);
+            osc2.stop(startTime + duration);
+          };
+
+          playBurst(now, 0.18);
+          playBurst(now + 0.26, 0.18);
+          playBurst(now + 0.52, 0.55);
+
+          if (navigator.vibrate) {
+            try { navigator.vibrate([200, 80, 200, 80, 500]); } catch (e) {}
+          }
+        } catch (err) {}
+      }
+
+      playBeep(isHigh = false) {
+        try {
+          const ctx = this.getContext();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(isHigh ? 1200 : 800, now);
+          gain.gain.setValueAtTime(0, now);
+          gain.gain.linearRampToValueAtTime(0.2, now + 0.02);
+          gain.gain.linearRampToValueAtTime(0, now + 0.12);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.13);
+        } catch (err) {}
+      }
+    }
+
+    const sound = new SoundEffects();
+
+    const INITIAL_PLAYERS = [
+      { id: 'p-1', name: 'Petr', rating: 4.5, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
+      { id: 'p-2', name: 'Honza', rating: 4.0, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
+      { id: 'p-3', name: 'Michal', rating: 3.5, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
+      { id: 'p-4', name: 'Tomáš', rating: 3.5, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
+      { id: 'p-5', name: 'David', rating: 3.0, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
+      { id: 'p-6', name: 'Lukáš', rating: 3.0, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
+      { id: 'p-7', name: 'Martin', rating: 2.5, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
+      { id: 'p-8', name: 'Jakub', rating: 2.5, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
+      { id: 'p-9', name: 'Ondra', rating: 2.0, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
+      { id: 'p-10', name: 'Filip', rating: 2.0, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
+    ];
+
+    function calculateWinrate(stats) {
+      if (!stats || stats.matches === 0) return 0;
+      return Math.round((stats.wins / stats.matches) * 100);
+    }
+
+    function balanceTeams(players, numTeams) {
+      const active = [...players.filter(p => p.active)].sort((a, b) => b.rating - a.rating);
+      const names = ['Tým A (Modří)', 'Tým B (Červení)', 'Tým C (Zelení)'];
+      const teams = Array.from({ length: numTeams }, (_, i) => ({
+        id: `team-${i + 1}`,
+        name: names[i],
+        players: [],
+        totalRating: 0
+      }));
+
+      active.forEach(player => {
+        teams.sort((a, b) => {
+          if (a.players.length !== b.players.length) return a.players.length - b.players.length;
+          return a.totalRating - b.totalRating;
+        });
+        teams[0].players.push(player);
+        teams[0].totalRating = Number((teams[0].totalRating + player.rating).toFixed(1));
+      });
+
+      return teams;
+    }
+
+    function createInitialMatches(teams) {
+      const nowIso = new Date().toISOString();
+      if (teams.length === 2) {
+        return [{
+          id: `match-1-${Date.now()}`,
+          matchNumber: 1,
+          teamAId: teams[0].id,
+          teamAName: teams[0].name,
+          teamBId: teams[1].id,
+          teamBName: teams[1].name,
+          teamAScore: 0,
+          teamBScore: 0,
+          status: 'in_progress',
+          kickoffAt: nowIso,
+          teamAPlayerIds: teams[0].players.map(p => p.id),
+          teamBPlayerIds: teams[1].players.map(p => p.id),
+        }];
+      }
+      if (teams.length === 3) {
+        const [tA, tB, tC] = teams;
+        return [
+          {
+            id: `match-1-${Date.now()}`,
+            matchNumber: 1,
+            teamAId: tA.id,
+            teamAName: tA.name,
+            teamBId: tB.id,
+            teamBName: tB.name,
+            teamAScore: 0,
+            teamBScore: 0,
+            status: 'in_progress',
+            restingTeamName: tC.name,
+            kickoffAt: nowIso,
+            teamAPlayerIds: tA.players.map(p => p.id),
+            teamBPlayerIds: tB.players.map(p => p.id),
+          },
+          {
+            id: `match-2-${Date.now()}`,
+            matchNumber: 2,
+            teamAId: tB.id,
+            teamAName: tB.name,
+            teamBId: tC.id,
+            teamBName: tC.name,
+            teamAScore: 0,
+            teamBScore: 0,
+            status: 'upcoming',
+            restingTeamName: tA.name,
+            teamAPlayerIds: tB.players.map(p => p.id),
+            teamBPlayerIds: tC.players.map(p => p.id),
+          },
+          {
+            id: `match-3-${Date.now()}`,
+            matchNumber: 3,
+            teamAId: tA.id,
+            teamAName: tA.name,
+            teamBId: tC.id,
+            teamBName: tC.name,
+            teamAScore: 0,
+            teamBScore: 0,
+            status: 'upcoming',
+            restingTeamName: tB.name,
+            teamAPlayerIds: tA.players.map(p => p.id),
+            teamBPlayerIds: tC.players.map(p => p.id),
+          }
+        ];
+      }
+      return [];
+    }
+
+    function App() {
+      const [darkMode, setDarkMode] = useState(true);
+      const [activeTab, setActiveTab] = useState('players');
+      const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+      const [copiedShare, setCopiedShare] = useState(false);
+
+      const [players, setPlayers] = useState(() => {
+        try {
+          const s = localStorage.getItem('ff_players');
+          return s ? JSON.parse(s) : INITIAL_PLAYERS;
+        } catch(e) { return INITIAL_PLAYERS; }
+      });
+
+      const [name, setName] = useState('');
+      const [rating, setRating] = useState(3.0);
+      const [numTeams, setNumTeams] = useState(2);
+
+      const [teams, setTeams] = useState(() => {
+        try {
+          const s = localStorage.getItem('ff_teams');
+          return s ? JSON.parse(s) : [];
+        } catch(e) { return []; }
+      });
+
+      const [matches, setMatches] = useState(() => {
+        try {
+          const s = localStorage.getItem('ff_matches');
+          return s ? JSON.parse(s) : [];
+        } catch(e) { return []; }
+      });
+
+      // Časomíra (4 minuty = 240s)
+      const [timerMode, setTimerMode] = useState('countdown');
+      const [timeLeft, setTimeLeft] = useState(240);
+      const [secondsElapsed, setSecondsElapsed] = useState(0);
+      const [isTimerRunning, setIsTimerRunning] = useState(false);
+      const [soundEnabled, setSoundEnabled] = useState(true);
+      const [hasWhistled, setHasWhistled] = useState(false);
+      const wakeLockRef = useRef(null);
+
+      // Ukládání do paměti prohlížeče
+      useEffect(() => { localStorage.setItem('ff_players', JSON.stringify(players)); }, [players]);
+      useEffect(() => { localStorage.setItem('ff_teams', JSON.stringify(teams)); }, [teams]);
+      useEffect(() => { localStorage.setItem('ff_matches', JSON.stringify(matches)); }, [matches]);
+
+      // Screen WakeLock
+      useEffect(() => {
+        async function reqWake() {
+          if ('wakeLock' in navigator && isTimerRunning) {
+            try { wakeLockRef.current = await navigator.wakeLock.request('screen'); } catch(e) {}
+          }
+        }
+        if (isTimerRunning) reqWake();
+        else if (wakeLockRef.current) {
+          wakeLockRef.current.release().catch(() => {});
+          wakeLockRef.current = null;
+        }
+        return () => { if (wakeLockRef.current) wakeLockRef.current.release().catch(() => {}); };
+      }, [isTimerRunning]);
+
+      // Timer cyklus
+      useEffect(() => {
+        let interval = null;
+        if (isTimerRunning) {
+          interval = setInterval(() => {
+            setSecondsElapsed(prev => prev + 1);
+            if (timerMode === 'countdown') {
+              setTimeLeft(prev => {
+                if (prev <= 1) {
+                  if (!hasWhistled && soundEnabled) {
+                    sound.playWhistle();
+                    setHasWhistled(true);
+                  }
+                  return 0;
+                }
+                if (prev <= 4 && prev > 1 && soundEnabled) {
+                  sound.playBeep(false);
+                }
+                return prev - 1;
+              });
+            }
+          }, 1000);
+        }
+        return () => { if (interval) clearInterval(interval); };
+      }, [isTimerRunning, timerMode, soundEnabled, hasWhistled]);
+
+      const formatTime = (totalSec) => {
+        const mins = Math.floor(totalSec / 60);
+        const secs = totalSec % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
       };
 
-      playBurst(now, 0.18);
-      playBurst(now + 0.26, 0.18);
-      playBurst(now + 0.52, 0.55);
+      const formatDateTime = (isoString) => {
+        if (!isoString) return '';
+        try {
+          const d = new Date(isoString);
+          return `${d.getDate()}.${d.getMonth() + 1}. ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+        } catch(e) { return ''; }
+      };
 
-      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-        try { navigator.vibrate([200, 80, 200, 80, 500]); } catch (e) {}
-      }
-    } catch (err) {}
-  }
+      const addPlayer = (e) => {
+        if (e) e.preventDefault();
+        const trimmed = name.trim();
+        if (!trimmed) return;
+        setPlayers(prev => [
+          ...prev,
+          { id: `p-${Date.now()}`, name: trimmed, rating, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } }
+        ]);
+        setName('');
+      };
 
-  playBeep(isHigh = false) {
-    try {
-      const ctx = this.getContext();
-      if (!ctx) return;
-      const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      const togglePlayer = (id) => {
+        setPlayers(prev => prev.map(p => p.id === id ? { ...p, active: !p.active } : p));
+      };
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(isHigh ? 1200 : 800, now);
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.2, now + 0.02);
-      gain.gain.linearRampToValueAtTime(0, now + 0.12);
+      const removePlayer = (id) => {
+        setPlayers(prev => prev.filter(p => p.id !== id));
+      };
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.13);
-    } catch (err) {}
-  }
-}
-
-const soundEffects = new SoundEffects();
-
-// ==========================================
-// 3. POMOCNÉ FUNKCE (ZÁPASY, STATISTIKY, SDÍLENÍ)
-// ==========================================
-function calculateWinrate(stats?: PlayerStats): number {
-  if (!stats || stats.matches === 0) return 0;
-  return Math.round((stats.wins / stats.matches) * 100);
-}
-
-function balanceTeams(players: Player[], numTeams: 2 | 3): GeneratedTeam[] {
-  const active = [...players.filter((p) => p.active)].sort((a, b) => b.rating - a.rating);
-  const teamNames = ['Tým A (Modří)', 'Tým B (Červení)', 'Tým C (Zelení)'];
-  const teams: GeneratedTeam[] = Array.from({ length: numTeams }, (_, i) => ({
-    id: `team-${i + 1}`,
-    name: teamNames[i],
-    players: [],
-    totalRating: 0,
-  }));
-
-  active.forEach((player) => {
-    teams.sort((a, b) => {
-      if (a.players.length !== b.players.length) return a.players.length - b.players.length;
-      return a.totalRating - b.totalRating;
-    });
-    teams[0].players.push(player);
-    teams[0].totalRating = Number((teams[0].totalRating + player.rating).toFixed(1));
-  });
-
-  return teams;
-}
-
-function createInitialMatches(teams: GeneratedTeam[]): Match[] {
-  const nowIso = new Date().toISOString();
-  if (teams.length === 2) {
-    return [{
-      id: `match-1-${Date.now()}`,
-      matchNumber: 1,
-      teamAId: teams[0].id,
-      teamAName: teams[0].name,
-      teamBId: teams[1].id,
-      teamBName: teams[1].name,
-      teamAScore: 0,
-      teamBScore: 0,
-      status: 'in_progress',
-      kickoffAt: nowIso,
-      startedAt: nowIso,
-      teamAPlayerIds: teams[0].players.map((p) => p.id),
-      teamBPlayerIds: teams[1].players.map((p) => p.id),
-    }];
-  }
-
-  if (teams.length === 3) {
-    const [teamA, teamB, teamC] = teams;
-    return [
-      {
-        id: `match-1-${Date.now()}`,
-        matchNumber: 1,
-        teamAId: teamA.id,
-        teamAName: teamA.name,
-        teamBId: teamB.id,
-        teamBName: teamB.name,
-        teamAScore: 0,
-        teamBScore: 0,
-        status: 'in_progress',
-        restingTeamName: teamC.name,
-        kickoffAt: nowIso,
-        startedAt: nowIso,
-        teamAPlayerIds: teamA.players.map((p) => p.id),
-        teamBPlayerIds: teamB.players.map((p) => p.id),
-      },
-      {
-        id: `match-2-${Date.now()}`,
-        matchNumber: 2,
-        teamAId: teamB.id,
-        teamAName: teamB.name,
-        teamBId: teamC.id,
-        teamBName: teamC.name,
-        teamAScore: 0,
-        teamBScore: 0,
-        status: 'upcoming',
-        restingTeamName: teamA.name,
-        teamAPlayerIds: teamB.players.map((p) => p.id),
-        teamBPlayerIds: teamC.players.map((p) => p.id),
-      },
-      {
-        id: `match-3-${Date.now()}`,
-        matchNumber: 3,
-        teamAId: teamA.id,
-        teamAName: teamA.name,
-        teamBId: teamC.id,
-        teamBName: teamC.name,
-        teamAScore: 0,
-        teamBScore: 0,
-        status: 'upcoming',
-        restingTeamName: teamB.name,
-        teamAPlayerIds: teamA.players.map((p) => p.id),
-        teamBPlayerIds: teamC.players.map((p) => p.id),
-      },
-    ];
-  }
-  return [];
-}
-
-function generateNextMatchFor3Teams(existingMatches: Match[], teams: GeneratedTeam[]): Match {
-  const [teamA, teamB, teamC] = teams;
-  const matchNumber = existingMatches.length + 1;
-  const cycle = (matchNumber - 1) % 3;
-
-  let currentA = teamA;
-  let currentB = teamB;
-  let resting = teamC;
-
-  if (cycle === 1) {
-    currentA = teamB;
-    currentB = teamC;
-    resting = teamA;
-  } else if (cycle === 2) {
-    currentA = teamA;
-    currentB = teamC;
-    resting = teamB;
-  }
-
-  return {
-    id: `match-${matchNumber}-${Date.now()}`,
-    matchNumber,
-    teamAId: currentA.id,
-    teamAName: currentA.name,
-    teamBId: currentB.id,
-    teamBName: currentB.name,
-    teamAScore: 0,
-    teamBScore: 0,
-    status: 'upcoming',
-    restingTeamName: resting.name,
-    teamAPlayerIds: currentA.players.map((p) => p.id),
-    teamBPlayerIds: currentB.players.map((p) => p.id),
-  };
-}
-
-function updatePlayersWithMatchResult(players: Player[], match: Match): Player[] {
-  if (match.status !== 'finished') return players;
-  const isDraw = match.teamAScore === match.teamBScore;
-  const teamAWon = match.teamAScore > match.teamBScore;
-
-  return players.map((player) => {
-    const inTeamA = match.teamAPlayerIds.includes(player.id) || match.teamAPlayerIds.includes(player.name);
-    const inTeamB = match.teamBPlayerIds.includes(player.id) || match.teamBPlayerIds.includes(player.name);
-    if (!inTeamA && !inTeamB) return player;
-
-    const currentStats: PlayerStats = player.stats || { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 };
-    const isWinner = (inTeamA && teamAWon) || (inTeamB && !teamAWon && !isDraw);
-    const isLoser = (inTeamA && !teamAWon && !isDraw) || (inTeamB && teamAWon);
-
-    return {
-      ...player,
-      stats: {
-        matches: currentStats.matches + 1,
-        wins: currentStats.wins + (isWinner ? 1 : 0),
-        draws: currentStats.draws + (isDraw ? 1 : 0),
-        losses: currentStats.losses + (isLoser ? 1 : 0),
-        goalsFor: (currentStats.goalsFor || 0) + (inTeamA ? match.teamAScore : match.teamBScore),
-        goalsAgainst: (currentStats.goalsAgainst || 0) + (inTeamA ? match.teamBScore : match.teamAScore),
-      },
-    };
-  });
-}
-
-function removeMatchResultFromPlayers(players: Player[], match: Match): Player[] {
-  if (match.status !== 'finished') return players;
-  const isDraw = match.teamAScore === match.teamBScore;
-  const teamAWon = match.teamAScore > match.teamBScore;
-
-  return players.map((player) => {
-    const inTeamA = match.teamAPlayerIds.includes(player.id) || match.teamAPlayerIds.includes(player.name);
-    const inTeamB = match.teamBPlayerIds.includes(player.id) || match.teamBPlayerIds.includes(player.name);
-    if (!inTeamA && !inTeamB) return player;
-
-    const currentStats: PlayerStats = player.stats || { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 };
-    const isWinner = (inTeamA && teamAWon) || (inTeamB && !teamAWon && !isDraw);
-    const isLoser = (inTeamA && !teamAWon && !isDraw) || (inTeamB && teamAWon);
-
-    return {
-      ...player,
-      stats: {
-        matches: Math.max(0, currentStats.matches - 1),
-        wins: Math.max(0, currentStats.wins - (isWinner ? 1 : 0)),
-        draws: Math.max(0, currentStats.draws - (isDraw ? 1 : 0)),
-        losses: Math.max(0, currentStats.losses - (isLoser ? 1 : 0)),
-        goalsFor: Math.max(0, (currentStats.goalsFor || 0) - (inTeamA ? match.teamAScore : match.teamBScore)),
-        goalsAgainst: Math.max(0, (currentStats.goalsAgainst || 0) - (inTeamA ? match.teamBScore : match.teamAScore)),
-      },
-    };
-  });
-}
-
-function encodeAppState(data: AppStateData): string {
-  try {
-    const compact = {
-      v: 1,
-      t: Date.now(),
-      p: data.players.map((p) => ({
-        i: p.id,
-        n: p.name,
-        r: p.rating,
-        a: p.active ? 1 : 0,
-        s: p.stats
-          ? [p.stats.matches, p.stats.wins, p.stats.draws, p.stats.losses, p.stats.goalsFor || 0, p.stats.goalsAgainst || 0]
-          : [0, 0, 0, 0, 0, 0],
-      })),
-      tm: data.teams.map((tm) => ({
-        i: tm.id,
-        n: tm.name,
-        r: tm.totalRating,
-        p: tm.players.map((p) => ({ i: p.id, n: p.name, r: p.rating })),
-      })),
-      m: data.matches.map((m) => ({
-        i: m.id,
-        nr: m.matchNumber,
-        a: m.teamAId,
-        an: m.teamAName,
-        b: m.teamBId,
-        bn: m.teamBName,
-        sa: m.teamAScore,
-        sb: m.teamBScore,
-        st: m.status,
-        rt: m.restingTeamName,
-        ko: m.kickoffAt,
-        fa: m.finishedAt,
-        ds: m.durationSeconds,
-        pa: m.teamAPlayerIds,
-        pb: m.teamBPlayerIds,
-      })),
-    };
-    const jsonStr = JSON.stringify(compact);
-    const utf8Bytes = encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, (_, p1) =>
-      String.fromCharCode(parseInt(p1, 16))
-    );
-    return btoa(utf8Bytes);
-  } catch (err) {
-    return '';
-  }
-}
-
-function decodeAppState(encoded: string): AppStateData | null {
-  try {
-    const decodedUtf8 = atob(encoded);
-    const jsonStr = decodeURIComponent(
-      Array.prototype.map.call(decodedUtf8, (c: string) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
-    );
-    const compact = JSON.parse(jsonStr);
-    if (!compact || !Array.isArray(compact.p)) return null;
-
-    const players: Player[] = compact.p.map((p: any) => ({
-      id: p.i || `p-${Math.random()}`,
-      name: p.n,
-      rating: Number(p.r),
-      active: Boolean(p.a),
-      stats: p.s
-        ? {
-            matches: Number(p.s[0] || 0),
-            wins: Number(p.s[1] || 0),
-            draws: Number(p.s[2] || 0),
-            losses: Number(p.s[3] || 0),
-            goalsFor: Number(p.s[4] || 0),
-            goalsAgainst: Number(p.s[5] || 0),
-          }
-        : { matches: 0, wins: 0, draws: 0, losses: 0 },
-    }));
-
-    const teams: GeneratedTeam[] = Array.isArray(compact.tm)
-      ? compact.tm.map((t: any) => ({
-          id: t.i,
-          name: t.n,
-          totalRating: Number(t.r),
-          players: t.p.map((tp: any) => ({ id: tp.i || `p-${tp.n}`, name: tp.n, rating: Number(tp.r), active: true })),
-        }))
-      : [];
-
-    const matches: Match[] = Array.isArray(compact.m)
-      ? compact.m.map((m: any) => ({
-          id: m.i,
-          matchNumber: Number(m.nr),
-          teamAId: m.a,
-          teamAName: m.an,
-          teamBId: m.b,
-          teamBName: m.bn,
-          teamAScore: Number(m.sa),
-          teamBScore: Number(m.sb),
-          status: m.st,
-          restingTeamName: m.rt,
-          kickoffAt: m.ko,
-          finishedAt: m.fa,
-          durationSeconds: m.ds ? Number(m.ds) : undefined,
-          teamAPlayerIds: m.pa || [],
-          teamBPlayerIds: m.pb || [],
-        }))
-      : [];
-
-    return { players, teams, matches, exportedAt: new Date(compact.t || Date.now()).toISOString() };
-  } catch (err) {
-    return null;
-  }
-}
-
-function getShareUrl(data: AppStateData): string {
-  const encoded = encodeAppState(data);
-  if (!encoded) return window.location.href;
-  const baseUrl = window.location.origin + window.location.pathname;
-  return `${baseUrl}#share=${encoded}`;
-}
-
-// ==========================================
-// 4. HLAVNÍ KOMPONENTA APLIKACE
-// ==========================================
-export default function App() {
-  const [darkMode, setDarkMode] = useState<boolean>(() => {
-    try {
-      const savedTheme = localStorage.getItem('theme');
-      return savedTheme ? savedTheme === 'dark' : true;
-    } catch (e) {
-      return true;
-    }
-  });
-
-  const [activeTab, setActiveTab] = useState<ActiveTab>('players');
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [sharedDataPrompt, setSharedDataPrompt] = useState<AppStateData | null>(null);
-
-  // State: Hráči
-  const [players, setPlayers] = useState<Player[]>(() => {
-    try {
-      const saved = localStorage.getItem('friday_football_players');
-      return saved ? JSON.parse(saved) : INITIAL_PLAYERS;
-    } catch (e) {
-      return INITIAL_PLAYERS;
-    }
-  });
-
-  const [name, setName] = useState('');
-  const [rating, setRating] = useState<number>(3);
-  const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
-  const [editRating, setEditRating] = useState<number>(3);
-
-  // State: Týmy a zápasy
-  const [numTeams, setNumTeams] = useState<2 | 3>(2);
-  const [teams, setTeams] = useState<GeneratedTeam[]>(() => {
-    try {
-      const saved = localStorage.getItem('friday_football_teams');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  });
-
-  const [matches, setMatches] = useState<Match[]>(() => {
-    try {
-      const saved = localStorage.getItem('friday_football_matches');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  });
-
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [copiedTeams, setCopiedTeams] = useState(false);
-  const [copiedShareLink, setCopiedShareLink] = useState(false);
-
-  // State: Časomíra (Odpočet 4 min)
-  const [timerMode, setTimerMode] = useState<'countdown' | 'stopwatch'>('countdown');
-  const [timeLeft, setTimeLeft] = useState<number>(240);
-  const [secondsElapsed, setSecondsElapsed] = useState<number>(0);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [hasWhistled, setHasWhistled] = useState(false);
-  const wakeLockRef = useRef<any>(null);
-
-  // Synchronizace s URL a LocalStorage
-  useEffect(() => {
-    try {
-      const hash = window.location.hash;
-      if (hash && hash.includes('share=')) {
-        const match = hash.match(/share=([^&]+)/);
-        if (match && match[1]) {
-          const shared = decodeAppState(match[1]);
-          if (shared && shared.players?.length) setSharedDataPrompt(shared);
+      const handleGenerate = () => {
+        const active = players.filter(p => p.active);
+        if (active.length < numTeams * 2) {
+          alert(`Potřebujete alespoň ${numTeams * 2} aktivních hráčů!`);
+          return;
         }
-      }
-    } catch (e) {}
-  }, []);
+        const gTeams = balanceTeams(players, numTeams);
+        setTeams(gTeams);
+        setMatches(createInitialMatches(gTeams));
+        setActiveTab('generator');
+      };
 
-  useEffect(() => {
-    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
-    if (darkMode) document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
-  }, [darkMode]);
+      const activeMatch = matches.find(m => m.status === 'in_progress') || matches.find(m => m.status === 'upcoming');
 
-  useEffect(() => {
-    localStorage.setItem('friday_football_players', JSON.stringify(players));
-  }, [players]);
+      const updateScore = (matchId, team, delta) => {
+        setMatches(prev => prev.map(m => {
+          if (m.id !== matchId) return m;
+          return {
+            ...m,
+            teamAScore: team === 'A' ? Math.max(0, m.teamAScore + delta) : m.teamAScore,
+            teamBScore: team === 'B' ? Math.max(0, m.teamBScore + delta) : m.teamBScore,
+          };
+        }));
+      };
 
-  useEffect(() => {
-    localStorage.setItem('friday_football_teams', JSON.stringify(teams));
-  }, [teams]);
+      const handleFinishMatch = (matchId) => {
+        const match = matches.find(m => m.id === matchId);
+        if (!match) return;
 
-  useEffect(() => {
-    localStorage.setItem('friday_football_matches', JSON.stringify(matches));
-  }, [matches]);
-
-  // Screen WakeLock pro mobilní telefon
-  useEffect(() => {
-    async function reqWake() {
-      if ('wakeLock' in navigator && isTimerRunning) {
-        try { wakeLockRef.current = await (navigator as any).wakeLock.request('screen'); } catch (e) {}
-      }
-    }
-    if (isTimerRunning) reqWake();
-    else if (wakeLockRef.current) {
-      wakeLockRef.current.release().catch(() => {});
-      wakeLockRef.current = null;
-    }
-    return () => { if (wakeLockRef.current) wakeLockRef.current.release().catch(() => {}); };
-  }, [isTimerRunning]);
-
-  // Časovač
-  useEffect(() => {
-    let interval: any = null;
-    if (isTimerRunning) {
-      interval = setInterval(() => {
-        setSecondsElapsed((prev) => prev + 1);
-        if (timerMode === 'countdown') {
-          setTimeLeft((prev) => {
-            if (prev <= 1) {
-              if (!hasWhistled && soundEnabled) {
-                soundEffects.playWhistle();
-                setHasWhistled(true);
-              }
-              return 0;
-            }
-            if (prev <= 4 && prev > 1 && soundEnabled) {
-              soundEffects.playBeep(false);
-            }
-            return prev - 1;
-          });
-        }
-      }, 1000);
-    }
-    return () => { if (interval) clearInterval(interval); };
-  }, [isTimerRunning, timerMode, soundEnabled, hasWhistled]);
-
-  const formatTime = (totalSec: number) => {
-    const mins = Math.floor(totalSec / 60);
-    const secs = totalSec % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const formatDateTime = (isoString?: string) => {
-    if (!isoString) return '';
-    try {
-      const date = new Date(isoString);
-      return `${date.getDate()}.${date.getMonth() + 1}. ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-    } catch (e) {
-      return '';
-    }
-  };
-
-  // Správa hráčů
-  const addPlayer = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    setPlayers((prev) => [
-      ...prev,
-      {
-        id: `player-${Date.now()}`,
-        name: trimmed,
-        rating,
-        active: true,
-        stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
-      },
-    ]);
-    setName('');
-  };
-
-  const togglePlayerActive = (id: string) => {
-    setPlayers((prev) => prev.map((p) => (p.id === id ? { ...p, active: !p.active } : p)));
-  };
-
-  const removePlayer = (id: string) => {
-    setPlayers((prev) => prev.filter((p) => p.id !== id));
-  };
-
-  // Generování týmů
-  const handleGenerateTeams = () => {
-    const activeCount = players.filter((p) => p.active).length;
-    if (activeCount < numTeams * 2) {
-      setErrorMessage(`Pro ${numTeams} týmy potřebujete alespoň ${numTeams * 2} aktivních hráčů.`);
-      return;
-    }
-    setErrorMessage(null);
-    const generated = balanceTeams(players, numTeams);
-    setTeams(generated);
-    const initialMatches = createInitialMatches(generated);
-    setMatches(initialMatches);
-    setActiveTab('generator');
-  };
-
-  // Správa skóre a zápasů
-  const activeMatch = matches.find((m) => m.status === 'in_progress') || matches.find((m) => m.status === 'upcoming');
-
-  const updateScore = (matchId: string, team: 'A' | 'B', delta: number) => {
-    setMatches((prev) =>
-      prev.map((m) => {
-        if (m.id !== matchId) return m;
-        return {
-          ...m,
-          teamAScore: team === 'A' ? Math.max(0, m.teamAScore + delta) : m.teamAScore,
-          teamBScore: team === 'B' ? Math.max(0, m.teamBScore + delta) : m.teamBScore,
+        const nowIso = new Date().toISOString();
+        const finishedMatch = {
+          ...match,
+          status: 'finished',
+          kickoffAt: match.kickoffAt || nowIso,
+          finishedAt: nowIso,
+          durationSeconds: secondsElapsed > 0 ? secondsElapsed : 240,
         };
-      })
-    );
-  };
 
-  const handleFinishMatch = (matchId: string) => {
-    const match = matches.find((m) => m.id === matchId);
-    if (!match) return;
+        const isDraw = finishedMatch.teamAScore === finishedMatch.teamBScore;
+        const aWon = finishedMatch.teamAScore > finishedMatch.teamBScore;
 
-    const nowIso = new Date().toISOString();
-    const finishedMatch: Match = {
-      ...match,
-      status: 'finished',
-      kickoffAt: match.kickoffAt || match.startedAt || nowIso,
-      finishedAt: nowIso,
-      durationSeconds: secondsElapsed > 0 ? secondsElapsed : match.durationSeconds,
-    };
+        setPlayers(prev => prev.map(p => {
+          const inA = finishedMatch.teamAPlayerIds.includes(p.id) || finishedMatch.teamAPlayerIds.includes(p.name);
+          const inB = finishedMatch.teamBPlayerIds.includes(p.id) || finishedMatch.teamBPlayerIds.includes(p.name);
+          if (!inA && !inB) return p;
 
-    setPlayers((prev) => updatePlayersWithMatchResult(prev, finishedMatch));
+          const st = p.stats || { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 };
+          const isWinner = (inA && aWon) || (inB && !aWon && !isDraw);
+          const isLoser = (inA && !aWon && !isDraw) || (inB && aWon);
 
-    setMatches((prev) => {
-      const updated = prev.map((m) => (m.id === matchId ? finishedMatch : m));
-      const nextUpcoming = updated.find((m) => m.status === 'upcoming');
-      if (nextUpcoming) {
-        return updated.map((m) =>
-          m.id === nextUpcoming.id ? { ...m, status: 'in_progress', kickoffAt: nowIso, startedAt: nowIso } : m
-        );
-      }
-      return updated;
-    });
+          return {
+            ...p,
+            stats: {
+              matches: st.matches + 1,
+              wins: st.wins + (isWinner ? 1 : 0),
+              draws: st.draws + (isDraw ? 1 : 0),
+              losses: st.losses + (isLoser ? 1 : 0),
+              goalsFor: (st.goalsFor || 0) + (inA ? finishedMatch.teamAScore : finishedMatch.teamBScore),
+              goalsAgainst: (st.goalsAgainst || 0) + (inA ? finishedMatch.teamBScore : finishedMatch.teamAScore),
+            }
+          };
+        }));
 
-    setTimeLeft(240);
-    setSecondsElapsed(0);
-    setIsTimerRunning(false);
-    setHasWhistled(false);
-  };
+        setMatches(prev => {
+          const updated = prev.map(m => m.id === matchId ? finishedMatch : m);
+          const nextUpcoming = updated.find(m => m.status === 'upcoming');
+          if (nextUpcoming) {
+            return updated.map(m => m.id === nextUpcoming.id ? { ...m, status: 'in_progress', kickoffAt: nowIso } : m);
+          }
+          return updated;
+        });
 
-  const handleDeleteMatch = (matchId: string) => {
-    const matchToDelete = matches.find((m) => m.id === matchId);
-    if (!matchToDelete) return;
-    if (matchToDelete.status === 'finished') {
-      setPlayers((prev) => removeMatchResultFromPlayers(prev, matchToDelete));
-    }
-    setMatches((prev) => prev.filter((m) => m.id !== matchId));
-  };
+        setTimeLeft(240);
+        setSecondsElapsed(0);
+        setIsTimerRunning(false);
+        setHasWhistled(false);
+      };
 
-  return (
-    <div className={`min-h-screen py-6 px-3 sm:px-6 transition-colors ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-900'}`}>
-      <div className="max-w-4xl mx-auto space-y-5">
-        {/* Banner importu sdíleného odkazu */}
-        {sharedDataPrompt && (
-          <div className="p-4 rounded-xl bg-blue-600 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🔗</span>
-              <div>
-                <h4 className="font-bold text-sm">Otevřen odkaz se sdílenými daty!</h4>
-                <p className="text-xs text-blue-100">
-                  Obsahuje {sharedDataPrompt.players?.length || 0} hráčů, {sharedDataPrompt.teams?.length || 0} týmů, {sharedDataPrompt.matches?.length || 0} zápasů.
-                </p>
+      const handleDeleteMatch = (id) => {
+        setMatches(prev => prev.filter(m => m.id !== id));
+      };
+
+      return (
+        <div className={`min-h-screen py-6 px-3 sm:px-6 ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-900'}`}>
+          <div className="max-w-4xl mx-auto space-y-4">
+            
+            {/* Header */}
+            <header className={`rounded-2xl border p-4 flex items-center justify-between ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">⚽</span>
+                <h1 className="text-xl font-bold">Friday Football</h1>
               </div>
-            </div>
-            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsShareModalOpen(true)}
+                  className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Share2 className="w-3.5 h-3.5" /> Sdílet
+                </button>
+                <button
+                  onClick={() => setDarkMode(!darkMode)}
+                  className={`p-2 rounded-xl border cursor-pointer ${darkMode ? 'bg-slate-800 border-slate-700 text-amber-400' : 'bg-slate-100 border-slate-200 text-slate-600'}`}
+                >
+                  {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                </button>
+              </div>
+            </header>
+
+            {/* Navigace */}
+            <nav className={`p-1.5 rounded-2xl border flex gap-1 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
               <button
-                onClick={() => setSharedDataPrompt(null)}
-                className="px-3 py-1.5 rounded-lg bg-blue-800 text-xs font-semibold cursor-pointer"
+                onClick={() => setActiveTab('players')}
+                className={`flex-1 py-2.5 rounded-xl font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer ${
+                  activeTab === 'players' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                }`}
               >
-                Ponechat původní
+                <Users className="w-4 h-4" /> Hráči ({players.filter(p => p.active).length})
               </button>
               <button
-                onClick={() => {
-                  setPlayers(sharedDataPrompt.players || []);
-                  setTeams(sharedDataPrompt.teams || []);
-                  setMatches(sharedDataPrompt.matches || []);
-                  setSharedDataPrompt(null);
-                  setActiveTab('matches');
-                }}
-                className="px-4 py-1.5 rounded-lg bg-white text-blue-700 text-xs font-bold shadow-xs cursor-pointer"
+                onClick={() => setActiveTab('generator')}
+                className={`flex-1 py-2.5 rounded-xl font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer ${
+                  activeTab === 'generator' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                }`}
               >
-                Načíst sdílená data
+                <Shuffle className="w-4 h-4" /> Týmy
               </button>
-            </div>
-          </div>
-        )}
-
-        {/* Hlavička */}
-        <header className={`rounded-xl border p-4 sm:p-5 flex items-center justify-between ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-          <div className="flex items-center gap-3">
-            <span className="text-3xl">⚽</span>
-            <h1 className="text-xl sm:text-2xl font-bold">Friday Football</h1>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsShareModalOpen(true)}
-              className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-              <span>Sdílet</span>
-            </button>
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className={`p-2 rounded-lg border cursor-pointer ${darkMode ? 'bg-slate-800 border-slate-700 text-amber-400' : 'bg-slate-100 border-slate-200 text-slate-600'}`}
-            >
-              {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
-          </div>
-        </header>
-
-        {/* 4 Záložky */}
-        <nav className={`p-1.5 rounded-xl border flex gap-1 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-          <button
-            onClick={() => setActiveTab('players')}
-            className={`flex-1 py-2 rounded-lg font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
-              activeTab === 'players' ? 'bg-blue-600 text-white shadow-xs' : darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            <span>Hráči ({players.filter((p) => p.active).length})</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('generator')}
-            className={`flex-1 py-2 rounded-lg font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
-              activeTab === 'generator' ? 'bg-blue-600 text-white shadow-xs' : darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Shuffle className="w-4 h-4" />
-            <span>Týmy</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('matches')}
-            className={`flex-1 py-2 rounded-lg font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer transition-colors relative ${
-              activeTab === 'matches' ? 'bg-blue-600 text-white shadow-xs' : darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Clock className="w-4 h-4" />
-            <span>Zápasy & Čas</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('stats')}
-            className={`flex-1 py-2 rounded-lg font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
-              activeTab === 'stats' ? 'bg-blue-600 text-white shadow-xs' : darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Trophy className="w-4 h-4" />
-            <span>Statistiky</span>
-          </button>
-        </nav>
-
-        {/* OBSAH ZÁLOŽEK */}
-
-        {/* 1. ZÁLOŽKA: HRÁČI */}
-        {activeTab === 'players' && (
-          <section className={`rounded-xl border p-5 space-y-5 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-            <form onSubmit={addPlayer} className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="text"
-                placeholder="Jméno hráče..."
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={`flex-1 px-3 py-2 rounded-lg border text-sm focus:outline-hidden ${darkMode ? 'bg-slate-950 border-slate-700 text-white' : 'bg-white border-slate-300'}`}
-              />
-              <div className="flex gap-2">
-                <select
-                  value={rating}
-                  onChange={(e) => setRating(Number(e.target.value))}
-                  className={`px-3 py-2 rounded-lg border text-sm font-semibold cursor-pointer ${darkMode ? 'bg-slate-950 border-slate-700 text-white' : 'bg-white border-slate-300'}`}
-                >
-                  {RATING_OPTIONS.map((r) => (
-                    <option key={r} value={r}>⭐ {r.toFixed(1)}</option>
-                  ))}
-                </select>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold flex items-center gap-1 cursor-pointer shadow-xs"
-                >
-                  <Plus className="w-4 h-4" /> Přidat
-                </button>
-              </div>
-            </form>
-
-            {/* Seznam hráčů */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {players.map((p) => (
-                <div
-                  key={p.id}
-                  className={`p-3 rounded-lg border flex items-center justify-between transition-colors ${
-                    p.active
-                      ? darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
-                      : darkMode ? 'bg-slate-900/40 border-slate-800/50 opacity-50' : 'bg-slate-100 opacity-60 border-slate-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <input
-                      type="checkbox"
-                      checked={p.active}
-                      onChange={() => togglePlayerActive(p.id)}
-                      className="w-4 h-4 rounded-sm text-blue-600 cursor-pointer"
-                    />
-                    <span className="font-semibold text-sm">{p.name}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-mono ${darkMode ? 'bg-slate-800 text-amber-400' : 'bg-amber-100 text-amber-800'}`}>
-                      ⭐ {p.rating.toFixed(1)}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => removePlayer(p.id)}
-                    className="p-1.5 text-slate-400 hover:text-red-500 cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* Tlačítko pro generování */}
-            <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <span>Počet týmů:</span>
-                <button
-                  type="button"
-                  onClick={() => setNumTeams(2)}
-                  className={`px-3 py-1 rounded-md text-xs font-bold cursor-pointer ${numTeams === 2 ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}
-                >
-                  2 Týmy
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setNumTeams(3)}
-                  className={`px-3 py-1 rounded-md text-xs font-bold cursor-pointer ${numTeams === 3 ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}
-                >
-                  3 Týmy
-                </button>
-              </div>
-
               <button
-                onClick={handleGenerateTeams}
-                className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                onClick={() => setActiveTab('matches')}
+                className={`flex-1 py-2.5 rounded-xl font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer ${
+                  activeTab === 'matches' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                }`}
               >
-                <Shuffle className="w-4 h-4" />
-                Vylosovat vyvážené týmy
+                <Clock className="w-4 h-4" /> Zápas & Čas
               </button>
-            </div>
-            {errorMessage && <p className="text-red-500 text-xs font-semibold">{errorMessage}</p>}
-          </section>
-        )}
+              <button
+                onClick={() => setActiveTab('stats')}
+                className={`flex-1 py-2.5 rounded-xl font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer ${
+                  activeTab === 'stats' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Trophy className="w-4 h-4" /> Tabulka
+              </button>
+            </nav>
 
-        {/* 2. ZÁLOŽKA: VYLOSOVANÉ TÝMY */}
-        {activeTab === 'generator' && (
-          <section className="space-y-4">
-            {teams.length === 0 ? (
-              <div className={`p-8 text-center rounded-xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                <p className="text-sm text-slate-400 mb-3">Zatím nebyly vylosovány žádné týmy.</p>
-                <button
-                  onClick={handleGenerateTeams}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold cursor-pointer"
-                >
-                  Vylosovat týmy nyní
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {teams.map((tm, idx) => (
-                  <div
-                    key={tm.id}
-                    className={`rounded-xl border p-4 space-y-3 ${
-                      idx === 0
-                        ? darkMode ? 'bg-blue-950/20 border-blue-800/40' : 'bg-blue-50/50 border-blue-200'
-                        : idx === 1
-                        ? darkMode ? 'bg-rose-950/20 border-rose-800/40' : 'bg-rose-50/50 border-rose-200'
-                        : darkMode ? 'bg-emerald-950/20 border-emerald-800/40' : 'bg-emerald-50/50 border-emerald-200'
-                    }`}
-                  >
-                    <div className="flex justify-between items-center border-b pb-2 border-slate-800/40">
-                      <h3 className="font-bold text-sm">{tm.name}</h3>
-                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-slate-800 text-amber-400">
-                        ⭐ {tm.totalRating.toFixed(1)}
-                      </span>
-                    </div>
-                    <ul className="space-y-1 text-xs">
-                      {tm.players.map((p) => (
-                        <li key={p.id} className="flex justify-between py-1 border-b border-slate-800/20">
-                          <span>{p.name}</span>
-                          <span className="text-slate-400">⭐ {p.rating.toFixed(1)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* 3. ZÁLOŽKA: ZÁPASY A ČASOMÍRA */}
-        {activeTab === 'matches' && (
-          <section className="space-y-5">
-            {activeMatch ? (
-              <div className={`rounded-xl border p-5 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-                {/* Časomíra & Píšťalka */}
-                <div className="flex flex-col items-center justify-center gap-3 mb-6">
-                  <div className="flex items-center gap-2">
-                    <div className={`p-1 rounded-lg border flex items-center gap-1 text-xs ${darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
-                      <button
-                        type="button"
-                        onClick={() => { setTimerMode('countdown'); setTimeLeft(240); setIsTimerRunning(false); setHasWhistled(false); }}
-                        className={`px-2.5 py-1 rounded-md font-semibold cursor-pointer ${timerMode === 'countdown' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}
-                      >
-                        Odpočet 4 min
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setTimerMode('stopwatch'); setIsTimerRunning(false); }}
-                        className={`px-2.5 py-1 rounded-md font-semibold cursor-pointer ${timerMode === 'stopwatch' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}
-                      >
-                        Stopky
-                      </button>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => { setSoundEnabled(!soundEnabled); if (!soundEnabled) soundEffects.playBeep(true); }}
-                      className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 cursor-pointer ${
-                        soundEnabled ? 'bg-emerald-950/40 border-emerald-800 text-emerald-300' : 'bg-slate-800 border-slate-700 text-slate-400'
-                      }`}
-                    >
-                      {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-                      <span>{soundEnabled ? 'Píšťalka ZAP' : 'Píšťalka VYP'}</span>
-                    </button>
-                  </div>
-
-                  {/* Displej času */}
-                  <div className={`flex items-center gap-3 px-6 py-2.5 rounded-2xl border ${
-                    timerMode === 'countdown' && timeLeft === 0
-                      ? 'bg-red-500/20 border-red-500 text-red-500 animate-bounce'
-                      : darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
-                  }`}>
-                    <Timer className="w-5 h-5 text-blue-500" />
-                    <span className="font-mono text-3xl sm:text-4xl font-extrabold tracking-wider">
-                      {timerMode === 'countdown' ? formatTime(timeLeft) : formatTime(secondsElapsed)}
-                    </span>
-                    <div className="flex items-center gap-1 ml-2">
-                      <button
-                        onClick={() => { if (!isTimerRunning && soundEnabled) soundEffects.playBeep(true); setIsTimerRunning(!isTimerRunning); }}
-                        className={`p-2 rounded-xl border cursor-pointer ${isTimerRunning ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-600 text-white'}`}
-                      >
-                        {isTimerRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}
-                      </button>
-                      <button
-                        onClick={() => { setIsTimerRunning(false); setTimeLeft(240); setSecondsElapsed(0); setHasWhistled(false); }}
-                        className="p-2 rounded-xl border bg-slate-800 border-slate-700 text-slate-400 cursor-pointer"
-                      >
-                        <RotateCcw className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Scoreboard */}
-                <div className="grid grid-cols-3 items-center text-center gap-2 py-4 border-y border-slate-800/40">
-                  <div className="space-y-2">
-                    <h3 className="font-bold text-sm sm:text-base">{activeMatch.teamAName}</h3>
-                    <div className="flex items-center justify-center gap-2">
-                      <button
-                        onClick={() => updateScore(activeMatch.id, 'A', -1)}
-                        className="w-8 h-8 rounded-lg bg-slate-800 text-slate-200 font-bold cursor-pointer"
-                      >
-                        -
-                      </button>
-                      <span className="text-3xl font-mono font-extrabold">{activeMatch.teamAScore}</span>
-                      <button
-                        onClick={() => updateScore(activeMatch.id, 'A', 1)}
-                        className="w-8 h-8 rounded-lg bg-blue-600 text-white font-bold cursor-pointer"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="text-slate-500 font-mono text-sm font-bold">VS</div>
-
-                  <div className="space-y-2">
-                    <h3 className="font-bold text-sm sm:text-base">{activeMatch.teamBName}</h3>
-                    <div className="flex items-center justify-center gap-2">
-                      <button
-                        onClick={() => updateScore(activeMatch.id, 'B', -1)}
-                        className="w-8 h-8 rounded-lg bg-slate-800 text-slate-200 font-bold cursor-pointer"
-                      >
-                        -
-                      </button>
-                      <span className="text-3xl font-mono font-extrabold">{activeMatch.teamBScore}</span>
-                      <button
-                        onClick={() => updateScore(activeMatch.id, 'B', 1)}
-                        className="w-8 h-8 rounded-lg bg-blue-600 text-white font-bold cursor-pointer"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <span className="text-xs text-slate-400">
-                    {activeMatch.kickoffAt && `Výkop: ${formatDateTime(activeMatch.kickoffAt)}`}
-                  </span>
-                  <button
-                    onClick={() => handleFinishMatch(activeMatch.id)}
-                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
-                  >
-                    <CheckCircle2 className="w-4 h-4" /> Ukončit zápas a zapsat skóre
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className={`p-8 text-center rounded-xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                <p className="text-sm text-slate-400">Žádný aktivní zápas.</p>
-              </div>
-            )}
-
-            {/* Historie zápasů */}
-            <div className={`rounded-xl border p-4 space-y-3 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-              <h3 className="font-bold text-sm flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-blue-500" /> Historie a rozpis zápasů
-              </h3>
-              <div className="space-y-2">
-                {matches.map((m) => (
-                  <div
-                    key={m.id}
-                    className={`p-3 rounded-lg border flex items-center justify-between text-xs ${
-                      m.status === 'finished'
-                        ? darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
-                        : darkMode ? 'bg-blue-950/20 border-blue-900/40' : 'bg-blue-50 border-blue-200'
-                    }`}
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 font-semibold">
-                        <span>Zápas #{m.matchNumber}:</span>
-                        <span>{m.teamAName}</span>
-                        <span className="font-mono px-1.5 py-0.5 rounded bg-slate-800 text-white">
-                          {m.teamAScore} : {m.teamBScore}
-                        </span>
-                        <span>{m.teamBName}</span>
-                      </div>
-                      <div className="text-[11px] text-slate-400 flex items-center gap-2">
-                        {m.kickoffAt && <span>Výkop: {formatDateTime(m.kickoffAt)}</span>}
-                        {m.durationSeconds && <span>(Délka: {formatTime(m.durationSeconds)})</span>}
-                        {m.restingTeamName && <span>• Odpočívá: {m.restingTeamName}</span>}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleDeleteMatch(m.id)}
-                      className="p-1.5 text-slate-500 hover:text-red-400 cursor-pointer"
-                      title="Smazat zápas"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* 4. ZÁLOŽKA: STATISTIKY */}
-        {activeTab === 'stats' && (
-          <section className={`rounded-xl border p-4 sm:p-5 space-y-4 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-            <h3 className="font-bold text-base flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-amber-400" /> Tabulka hráčů a úspěšnost
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
-                <thead className={`border-b ${darkMode ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
-                  <tr>
-                    <th className="py-2 px-3">Hráč</th>
-                    <th className="py-2 px-2 text-center">Z</th>
-                    <th className="py-2 px-2 text-center">V</th>
-                    <th className="py-2 px-2 text-center">R</th>
-                    <th className="py-2 px-2 text-center">P</th>
-                    <th className="py-2 px-2 text-center">Skóre</th>
-                    <th className="py-2 px-3 text-right">Winrate</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/40 font-mono">
-                  {[...players]
-                    .sort((a, b) => calculateWinrate(b.stats) - calculateWinrate(a.stats) || (b.stats?.wins || 0) - (a.stats?.wins || 0))
-                    .map((p, idx) => (
-                      <tr key={p.id} className={idx === 0 ? 'font-bold text-amber-400' : ''}>
-                        <td className="py-2.5 px-3 font-sans flex items-center gap-1.5">
-                          {idx === 0 && '👑'} {p.name}
-                        </td>
-                        <td className="py-2.5 px-2 text-center">{p.stats?.matches || 0}</td>
-                        <td className="py-2.5 px-2 text-center text-emerald-500">{p.stats?.wins || 0}</td>
-                        <td className="py-2.5 px-2 text-center text-slate-400">{p.stats?.draws || 0}</td>
-                        <td className="py-2.5 px-2 text-center text-rose-500">{p.stats?.losses || 0}</td>
-                        <td className="py-2.5 px-2 text-center">
-                          {p.stats?.goalsFor || 0}:{p.stats?.goalsAgainst || 0}
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-bold text-blue-500">
-                          {calculateWinrate(p.stats)} %
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
-
-        {/* MODÁLNÍ OKNO PRO SDÍLENÍ */}
-        {isShareModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-            <div className={`w-full max-w-lg rounded-2xl border p-5 space-y-4 ${darkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
-              <div className="flex items-center justify-between border-b pb-3 border-slate-800">
-                <div className="flex items-center gap-2">
-                  <Share2 className="w-5 h-5 text-blue-500" />
-                  <h3 className="font-bold text-base">Sdílení fotbálku</h3>
-                </div>
-                <button onClick={() => setIsShareModalOpen(false)} className="p-1 cursor-pointer">
-                  <X className="w-4 h-4 text-slate-400" />
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                <p className="text-xs text-slate-400">
-                  Pošlete kamarádům odkaz. Jakmile jej otevřou na mobilu či PC, automaticky se jim načtou aktuální týmy i stav zápasů.
-                </p>
-                <div className="flex gap-2">
+            {/* TAB 1: HRÁČI */}
+            {activeTab === 'players' && (
+              <section className={`rounded-2xl border p-5 space-y-4 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+                <form onSubmit={addPlayer} className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
-                    readOnly
-                    value={getShareUrl({ players, teams, matches })}
-                    className={`w-full px-3 py-2 text-xs rounded-lg border font-mono truncate ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-300' : 'bg-slate-50 border-slate-300'}`}
+                    placeholder="Jméno hráče..."
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    className={`flex-1 px-3 py-2 rounded-xl border text-sm ${darkMode ? 'bg-slate-950 border-slate-700 text-white' : 'bg-white border-slate-300'}`}
                   />
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(getShareUrl({ players, teams, matches }));
-                      setCopiedShareLink(true);
-                      setTimeout(() => setCopiedShareLink(false), 2000);
-                    }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold cursor-pointer shrink-0"
-                  >
-                    {copiedShareLink ? 'Zkopírováno!' : 'Kopírovat'}
-                  </button>
+                  <div className="flex gap-2">
+                    <select
+                      value={rating}
+                      onChange={e => setRating(Number(e.target.value))}
+                      className={`px-3 py-2 rounded-xl border text-sm font-semibold cursor-pointer ${darkMode ? 'bg-slate-950 border-slate-700 text-white' : 'bg-white border-slate-300'}`}
+                    >
+                      {[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map(r => (
+                        <option key={r} value={r}>⭐ {r.toFixed(1)}</option>
+                      ))}
+                    </select>
+                    <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold flex items-center gap-1 cursor-pointer">
+                      <Plus className="w-4 h-4" /> Přidat
+                    </button>
+                  </div>
+                </form>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {players.map(p => (
+                    <div
+                      key={p.id}
+                      className={`p-3 rounded-xl border flex items-center justify-between ${
+                        p.active ? (darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200') : 'opacity-40 bg-slate-900'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <input
+                          type="checkbox"
+                          checked={p.active}
+                          onChange={() => togglePlayer(p.id)}
+                          className="w-4 h-4 text-blue-600 rounded cursor-pointer"
+                        />
+                        <span className="font-semibold text-sm">{p.name}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full font-mono bg-slate-800 text-amber-400">
+                          ⭐ {p.rating.toFixed(1)}
+                        </span>
+                      </div>
+                      <button onClick={() => removePlayer(p.id)} className="p-1.5 text-slate-500 hover:text-red-400 cursor-pointer">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
 
-                <button
-                  onClick={() => {
-                    const text = encodeURIComponent(`⚽ Friday Football:\n${getShareUrl({ players, teams, matches })}`);
-                    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
-                  }}
-                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Send className="w-4 h-4" /> Poslat na WhatsApp
-                </button>
+                <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span>Počet týmů:</span>
+                    <button onClick={() => setNumTeams(2)} className={`px-3 py-1 rounded-lg text-xs font-bold cursor-pointer ${numTeams === 2 ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>2 Týmy</button>
+                    <button onClick={() => setNumTeams(3)} className={`px-3 py-1 rounded-lg text-xs font-bold cursor-pointer ${numTeams === 3 ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>3 Týmy</button>
+                  </div>
+                  <button onClick={handleGenerate} className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md">
+                    <Shuffle className="w-4 h-4" /> Vylosovat vyvážené týmy
+                  </button>
+                </div>
+              </section>
+            )}
+
+            {/* TAB 2: TÝMY */}
+            {activeTab === 'generator' && (
+              <section className="space-y-3">
+                {teams.length === 0 ? (
+                  <div className="p-8 text-center rounded-2xl border border-slate-800">Zatím nebyly vylosovány týmy.</div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {teams.map((tm, idx) => (
+                      <div key={tm.id} className={`rounded-2xl border p-4 space-y-2 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                        <div className="flex justify-between items-center border-b pb-2 border-slate-800">
+                          <h3 className="font-bold text-sm">{tm.name}</h3>
+                          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-slate-800 text-amber-400">⭐ {tm.totalRating.toFixed(1)}</span>
+                        </div>
+                        <ul className="space-y-1 text-xs">
+                          {tm.players.map(p => (
+                            <li key={p.id} className="flex justify-between py-1 border-b border-slate-800/30">
+                              <span>{p.name}</span>
+                              <span className="text-slate-400">⭐ {p.rating.toFixed(1)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* TAB 3: ZÁPASY A ČASOMÍRA */}
+            {activeTab === 'matches' && (
+              <section className="space-y-4">
+                {activeMatch ? (
+                  <div className={`rounded-2xl border p-5 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+                    
+                    {/* Ovládání odpočtu 4 min / stopek a píšťalky */}
+                    <div className="flex flex-col items-center justify-center gap-3 mb-5">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1 rounded-xl border border-slate-800 bg-slate-950 flex items-center gap-1 text-xs">
+                          <button
+                            onClick={() => { setTimerMode('countdown'); setTimeLeft(240); setIsTimerRunning(false); setHasWhistled(false); }}
+                            className={`px-3 py-1 rounded-lg font-semibold cursor-pointer ${timerMode === 'countdown' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}
+                          >
+                            Odpočet 4 min
+                          </button>
+                          <button
+                            onClick={() => { setTimerMode('stopwatch'); setIsTimerRunning(false); }}
+                            className={`px-3 py-1 rounded-lg font-semibold cursor-pointer ${timerMode === 'stopwatch' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}
+                          >
+                            Stopky
+                          </button>
+                        </div>
+
+                        <button
+                          onClick={() => { setSoundEnabled(!soundEnabled); if (!soundEnabled) sound.playBeep(true); }}
+                          className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 cursor-pointer ${
+                            soundEnabled ? 'bg-emerald-950/40 border-emerald-800 text-emerald-300' : 'bg-slate-800 border-slate-700 text-slate-400'
+                          }`}
+                        >
+                          {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                          <span>{soundEnabled ? 'Píšťalka ZAP' : 'Píšťalka VYP'}</span>
+                        </button>
+                      </div>
+
+                      {/* Časomíra */}
+                      <div className={`flex items-center gap-3 px-6 py-2.5 rounded-2xl border ${
+                        timerMode === 'countdown' && timeLeft === 0
+                          ? 'bg-red-500/20 border-red-500 text-red-500 animate-bounce'
+                          : darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
+                      }`}>
+                        <Timer className="w-5 h-5 text-blue-500" />
+                        <span className="font-mono text-3xl sm:text-4xl font-extrabold tracking-wider">
+                          {timerMode === 'countdown' ? formatTime(timeLeft) : formatTime(secondsElapsed)}
+                        </span>
+                        <div className="flex items-center gap-1 ml-2">
+                          <button
+                            onClick={() => { if (!isTimerRunning && soundEnabled) sound.playBeep(true); setIsTimerRunning(!isTimerRunning); }}
+                            className={`p-2 rounded-xl border cursor-pointer ${isTimerRunning ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-emerald-600 text-white'}`}
+                          >
+                            {isTimerRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}
+                          </button>
+                          <button
+                            onClick={() => { setIsTimerRunning(false); setTimeLeft(240); setSecondsElapsed(0); setHasWhistled(false); }}
+                            className="p-2 rounded-xl border bg-slate-800 border-slate-700 text-slate-400 cursor-pointer"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Skóre zápasu */}
+                    <div className="grid grid-cols-3 items-center text-center gap-2 py-4 border-y border-slate-800">
+                      <div>
+                        <h3 className="font-bold text-sm sm:text-base">{activeMatch.teamAName}</h3>
+                        <div className="flex items-center justify-center gap-2 mt-2">
+                          <button onClick={() => updateScore(activeMatch.id, 'A', -1)} className="w-8 h-8 rounded-lg bg-slate-800 text-white font-bold cursor-pointer">-</button>
+                          <span className="text-3xl font-mono font-extrabold">{activeMatch.teamAScore}</span>
+                          <button onClick={() => updateScore(activeMatch.id, 'A', 1)} className="w-8 h-8 rounded-lg bg-blue-600 text-white font-bold cursor-pointer">+</button>
+                        </div>
+                      </div>
+
+                      <div className="text-slate-500 font-mono text-sm font-bold">VS</div>
+
+                      <div>
+                        <h3 className="font-bold text-sm sm:text-base">{activeMatch.teamBName}</h3>
+                        <div className="flex items-center justify-center gap-2 mt-2">
+                          <button onClick={() => updateScore(activeMatch.id, 'B', -1)} className="w-8 h-8 rounded-lg bg-slate-800 text-white font-bold cursor-pointer">-</button>
+                          <span className="text-3xl font-mono font-extrabold">{activeMatch.teamBScore}</span>
+                          <button onClick={() => updateScore(activeMatch.id, 'B', 1)} className="w-8 h-8 rounded-lg bg-blue-600 text-white font-bold cursor-pointer">+</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                      <span className="text-xs text-slate-400">
+                        {activeMatch.kickoffAt && `Výkop: ${formatDateTime(activeMatch.kickoffAt)}`}
+                      </span>
+                      <button
+                        onClick={() => handleFinishMatch(activeMatch.id)}
+                        className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      >
+                        <CheckCircle2 className="w-4 h-4" /> Ukončit zápas a zapsat skóre
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-8 text-center rounded-2xl border border-slate-800">Žádný aktivní zápas.</div>
+                )}
+
+                {/* Rozpis zápasů s výkopem a délkou */}
+                <div className={`rounded-2xl border p-4 space-y-2 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+                  <h3 className="font-bold text-sm flex items-center gap-2"><Calendar className="w-4 h-4 text-blue-500" /> Rozpis & Historie zápasů</h3>
+                  <div className="space-y-2">
+                    {matches.map(m => (
+                      <div key={m.id} className={`p-3 rounded-xl border flex items-center justify-between text-xs ${m.status === 'finished' ? 'bg-slate-950 border-slate-800' : 'bg-blue-950/20 border-blue-900/40'}`}>
+                        <div>
+                          <div className="font-semibold flex items-center gap-2">
+                            <span>#{m.matchNumber}:</span>
+                            <span>{m.teamAName}</span>
+                            <span className="font-mono px-1.5 py-0.5 rounded bg-slate-800 text-white">{m.teamAScore} : {m.teamBScore}</span>
+                            <span>{m.teamBName}</span>
+                          </div>
+                          <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
+                            {m.kickoffAt && <span>Výkop: {formatDateTime(m.kickoffAt)}</span>}
+                            {m.durationSeconds && <span>(Délka: {formatTime(m.durationSeconds)})</span>}
+                            {m.restingTeamName && <span>• Odpočívá: {m.restingTeamName}</span>}
+                          </div>
+                        </div>
+                        <button onClick={() => handleDeleteMatch(m.id)} className="p-1.5 text-slate-500 hover:text-red-400 cursor-pointer">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* TAB 4: STATISTIKY */}
+            {activeTab === 'stats' && (
+              <section className={`rounded-2xl border p-5 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+                <h3 className="font-bold text-base flex items-center gap-2 mb-3">
+                  <Trophy className="w-5 h-5 text-amber-400" /> Tabulka úspěšnosti hráčů
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead className="border-b border-slate-800 text-slate-400">
+                      <tr>
+                        <th className="py-2 px-3">Hráč</th>
+                        <th className="py-2 px-2 text-center">Z</th>
+                        <th className="py-2 px-2 text-center">V</th>
+                        <th className="py-2 px-2 text-center">R</th>
+                        <th className="py-2 px-2 text-center">P</th>
+                        <th className="py-2 px-2 text-center">Skóre</th>
+                        <th className="py-2 px-3 text-right">Winrate</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/40 font-mono">
+                      {[...players].sort((a,b) => calculateWinrate(b.stats) - calculateWinrate(a.stats) || (b.stats?.wins || 0) - (a.stats?.wins || 0)).map((p, idx) => (
+                        <tr key={p.id} className={idx === 0 ? 'font-bold text-amber-400' : ''}>
+                          <td className="py-2.5 px-3 font-sans">{idx === 0 && '👑 '} {p.name}</td>
+                          <td className="py-2.5 px-2 text-center">{p.stats?.matches || 0}</td>
+                          <td className="py-2.5 px-2 text-center text-emerald-500">{p.stats?.wins || 0}</td>
+                          <td className="py-2.5 px-2 text-center text-slate-400">{p.stats?.draws || 0}</td>
+                          <td className="py-2.5 px-2 text-center text-rose-500">{p.stats?.losses || 0}</td>
+                          <td className="py-2.5 px-2 text-center">{p.stats?.goalsFor || 0}:{p.stats?.goalsAgainst || 0}</td>
+                          <td className="py-2.5 px-3 text-right font-bold text-blue-500">{calculateWinrate(p.stats)} %</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
+
+            {/* MODAL SDÍLENÍ */}
+            {isShareModalOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                <div className={`w-full max-w-md rounded-2xl border p-5 space-y-4 ${darkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
+                  <div className="flex justify-between items-center border-b pb-3 border-slate-800">
+                    <h3 className="font-bold text-base flex items-center gap-2"><Share2 className="w-5 h-5 text-blue-500" /> Sdílet aplikaci</h3>
+                    <button onClick={() => setIsShareModalOpen(false)} className="p-1 cursor-pointer"><X className="w-4 h-4 text-slate-400" /></button>
+                  </div>
+                  <p className="text-xs text-slate-400">Tento soubor můžete kdykoli nahrát na GitHub Pages nebo poslat kamarádům.</p>
+                  <div className="flex gap-2">
+                    <input type="text" readOnly value={window.location.href} className="w-full px-3 py-2 text-xs rounded-xl border bg-slate-950 border-slate-800 truncate" />
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(window.location.href);
+                        setCopiedShare(true);
+                        setTimeout(() => setCopiedShare(false), 2000);
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold cursor-pointer shrink-0"
+                    >
+                      {copiedShare ? 'Zkopírováno' : 'Kopírovat'}
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const t = encodeURIComponent(`⚽ Friday Football:\n${window.location.href}`);
+                      window.open(`https://api.whatsapp.com/send?text=${t}`, '_blank');
+                    }}
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Send className="w-4 h-4" /> Odeslat na WhatsApp
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
+
           </div>
-        )}
-      </div>
-    </div>
-  );
-}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
