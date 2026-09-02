@@ -6,121 +6,135 @@
   <title>Friday Football</title>
   <style>
     :root {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --card-border: #334155;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --input-bg: #0b1120;
-      --input-border: #334155;
-      --item-bg: #0f172a;
-      --item-border: #1e293b;
-      --item-active-bg: rgba(37, 99, 235, 0.18);
+      --bg: #050505;
+      --card-bg: #09090b;
+      --card-border: #27272a;
+      --text: #e4e4e7;
+      --text-muted: #a1a1aa;
+      --input-bg: #18181b;
+      --input-border: #27272a;
+      --item-bg: #0c0c0e;
+      --item-border: #27272a;
+      --item-active-bg: rgba(37, 99, 235, 0.15);
       --item-active-border: #2563eb;
       --primary: #2563eb;
       --primary-hover: #1d4ed8;
       --accent: #f59e0b;
-      --green-bg: rgba(5, 150, 105, 0.15);
+      --green-bg: #064e3b;
       --green-text: #34d399;
       --green-border: rgba(5, 150, 105, 0.3);
-      --table-header: #1e293b;
+      --table-header: #09090b;
     }
 
     body.light {
-      --bg: #f1f5f9;
+      --bg: #f4f4f5;
       --card-bg: #ffffff;
-      --card-border: #e2e8f0;
-      --text: #0f172a;
-      --text-muted: #64748b;
+      --card-border: #e4e4e7;
+      --text: #09090b;
+      --text-muted: #71717a;
       --input-bg: #ffffff;
-      --input-border: #cbd5e1;
-      --item-bg: #f8fafc;
-      --item-border: #e2e8f0;
-      --item-active-bg: #eff6ff;
-      --item-active-border: #bfdbfe;
+      --input-border: #d4d4d8;
+      --item-bg: #fafafa;
+      --item-border: #e4e4e7;
+      --item-active-bg: rgba(37, 99, 235, 0.1);
+      --item-active-border: #93c5fd;
       --primary: #2563eb;
       --primary-hover: #1d4ed8;
       --accent: #d97706;
-      --green-bg: #ecfdf5;
+      --green-bg: #d1fae5;
       --green-text: #047857;
-      --green-border: #a7f3d0;
-      --table-header: #f8fafc;
+      --green-border: #6ee7b7;
+      --table-header: #ffffff;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding: 20px 12px; transition: background 0.2s, color 0.2s; }
-    .container { max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
-    .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
+    body { background-color: var(--bg); color: var(--text); padding: 24px 16px; transition: background 0.2s, color 0.2s; overflow-x: hidden; }
+    .container { max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+    
+    .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 24px; }
     
     .header-content { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    header h1 { font-size: 22px; color: var(--text); display: flex; align-items: center; gap: 8px; }
-    header p { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+    header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.025em; color: var(--text); display: flex; align-items: center; gap: 12px; text-transform: uppercase; }
+    header p { font-size: 11px; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
     
-    .btn-theme { background: var(--item-bg); border: 1px solid var(--card-border); color: var(--text); padding: 7px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+    .btn-theme { background: var(--item-bg); border: 1px solid var(--card-border); color: var(--text); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px; transition: background 0.2s; }
     .btn-theme:hover { background: var(--card-border); }
 
-    .tabs { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--card-bg); padding: 5px; border-radius: 12px; border: 1px solid var(--card-border); gap: 4px; }
-    .tab-btn { padding: 9px 6px; border: none; background: transparent; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: all 0.2s; white-space: nowrap; }
-    .tab-btn.active { background: var(--primary); color: #ffffff; }
+    .tabs { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--card-bg); padding: 6px; border-radius: 12px; border: 1px solid var(--card-border); gap: 4px; }
+    .tab-btn { padding: 10px 6px; border: none; background: transparent; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; white-space: nowrap; }
+    .tab-btn.active { background: var(--primary); color: #ffffff; box-shadow: 0 0 15px rgba(37,99,235,0.3); }
     .tab-btn:not(.active):hover { color: var(--text); background: var(--item-bg); }
-    .badge { font-size: 10px; padding: 2px 6px; border-radius: 999px; background: var(--card-border); color: var(--text); }
-    .tab-btn.active .badge { background: rgba(0,0,0,0.3); color: #ffffff; }
+    .badge { font-size: 10px; padding: 2px 6px; border-radius: 999px; background: var(--card-border); color: var(--text); font-family: monospace; }
+    .tab-btn.active .badge { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.2); color: #ffffff; }
 
-    .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-    input[type="text"] { flex: 1; min-width: 160px; padding: 9px 12px; background: var(--input-bg); color: var(--text); border: 1px solid var(--input-border); border-radius: 8px; font-size: 14px; outline: none; }
+    .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    input[type="text"] { flex: 1; min-width: 160px; padding: 10px 14px; background: var(--input-bg); color: var(--text); border: 1px solid var(--input-border); border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s; }
     input[type="text"]:focus { border-color: var(--primary); }
-    select { padding: 8px 10px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--input-bg); color: var(--text); font-size: 13px; cursor: pointer; }
-    .btn-primary { padding: 9px 16px; background: var(--primary); color: #ffffff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    select { padding: 10px 12px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--input-bg); color: var(--text); font-size: 13px; font-weight: 600; font-family: monospace; cursor: pointer; }
+    .btn-primary { padding: 10px 16px; background: var(--primary); color: #ffffff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; box-shadow: 0 4px 10px rgba(37,99,235,0.2); }
     .btn-primary:hover { background: var(--primary-hover); }
-    .btn-generate { width: 100%; padding: 12px; background: #059669; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
-    .btn-generate:hover { background: #047857; }
+    .btn-generate { width: 100%; padding: 14px; background: #ffffff; color: #000000; border: none; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; transition: background 0.2s, opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    body.light .btn-generate { background: #000000; color: #ffffff; }
+    .btn-generate:hover { opacity: 0.9; }
 
-    .player-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; }
-    .player-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-radius: 8px; background: var(--item-bg); border: 1px solid var(--item-border); }
+    .player-list { margin-top: 16px; display: flex; flex-direction: column; gap: 4px; max-height: 400px; overflow-y: auto; }
+    .player-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 8px; background: var(--item-bg); border: 1px solid var(--item-border); transition: background 0.2s; }
     .player-item.active { background: var(--item-active-bg); border-color: var(--item-active-border); }
     .player-info { display: flex; align-items: center; gap: 10px; cursor: pointer; flex: 1; }
-    .player-actions { display: flex; align-items: center; gap: 8px; }
-    .btn-delete { background: rgba(220, 38, 38, 0.15); color: #f87171; border: 1px solid rgba(220, 38, 38, 0.3); padding: 5px 9px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
-    .btn-delete:hover { background: rgba(220, 38, 38, 0.3); }
+    .player-actions { display: flex; align-items: center; gap: 12px; }
+    .btn-delete { background: transparent; color: #ef4444; border: 1px solid rgba(239,68,68,0.3); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: background 0.2s; }
+    .btn-delete:hover { background: rgba(239,68,68,0.1); }
 
-    .alert { padding: 12px; border-radius: 8px; background: rgba(217, 119, 6, 0.15); border: 1px solid rgba(217, 119, 6, 0.3); color: #fbbf24; font-size: 13px; margin-bottom: 12px; text-align: center; }
-    .team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 12px; }
-    .team-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 14px; }
-    .team-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 8px; margin-bottom: 8px; }
-    .team-header h3 { font-size: 16px; color: var(--text); }
-    .team-total { font-size: 12px; font-weight: bold; background: var(--green-bg); color: var(--green-text); padding: 2px 8px; border-radius: 999px; border: 1px solid var(--green-border); }
+    .alert { padding: 12px; border-radius: 8px; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); color: #f59e0b; font-size: 13px; margin-bottom: 16px; text-align: center; font-weight: 600; }
+    
+    .team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 16px; }
+    .team-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; position: relative; overflow: hidden; }
+    .team-card::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, var(--primary), transparent); opacity: 0.5; }
+    .team-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--item-border); padding-bottom: 12px; margin-bottom: 12px; }
+    .team-header h3 { font-size: 15px; color: var(--text); font-weight: 700; }
+    .team-total { font-size: 11px; font-weight: bold; background: var(--item-bg); color: var(--text); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--item-border); font-family: monospace; }
     .team-members { list-style: none; display: flex; flex-direction: column; gap: 6px; }
-    .team-members li { font-size: 13px; display: flex; justify-content: space-between; background: var(--item-bg); border: 1px solid var(--item-border); padding: 6px 8px; border-radius: 6px; }
-    .quick-actions { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); }
-    .quick-actions a { color: var(--primary); text-decoration: none; cursor: pointer; }
+    .team-members li { font-size: 13px; display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 8px; background: transparent; border: 1px solid transparent; transition: background 0.2s; }
+    .team-members li:hover { background: var(--item-bg); border-color: var(--item-border); }
+    .team-members li strong { font-family: monospace; font-size: 12px; color: var(--accent); }
+    
+    .quick-actions { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+    .quick-actions a { color: var(--primary); text-decoration: none; cursor: pointer; text-transform: none; font-weight: 500; letter-spacing: 0; }
     .quick-actions a:hover { text-decoration: underline; }
-    .diff-badge { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: rgba(37, 99, 235, 0.15); color: #93c5fd; border: 1px solid rgba(37, 99, 235, 0.3); }
+    .diff-badge { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: var(--item-active-bg); color: var(--text); border: 1px solid var(--item-active-border); font-family: monospace; }
 
     /* Scoreboard & Timer */
-    .scoreboard { background: var(--item-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; margin-top: 12px; }
-    .timer-box { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 16px; }
-    .timer-display { font-family: monospace; font-size: 26px; font-weight: bold; background: var(--card-bg); border: 1px solid var(--card-border); padding: 6px 16px; border-radius: 8px; }
-    .timer-btn { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
+    .scoreboard { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 24px; margin-top: 16px; position: relative; overflow: hidden; }
+    .scoreboard::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(90deg, transparent, var(--primary), transparent); }
+    .timer-box { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 24px; }
+    .timer-display { font-family: monospace; font-size: 32px; font-weight: 900; background: var(--input-bg); border: 1px solid var(--card-border); padding: 8px 24px; border-radius: 12px; color: var(--green-text); letter-spacing: -1px; }
+    .timer-btn { background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text); padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; transition: background 0.2s; }
     .timer-btn:hover { background: var(--card-border); }
     
-    .match-arena { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; text-align: center; }
-    .team-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 12px; }
-    .score-controls { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0; }
-    .score-val { font-family: monospace; font-size: 32px; font-weight: bold; color: var(--primary); width: 44px; text-align: center; }
-    .btn-score { width: 34px; height: 34px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--item-bg); color: var(--text); font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .btn-score.plus { background: var(--primary); color: white; border: none; }
+    .match-arena { display: grid; grid-template-columns: 1fr auto 1fr; gap: 24px; align-items: center; text-align: center; }
+    .team-box { background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; align-items: center; }
+    .team-box:first-child h3 { color: #ef4444; }
+    .team-box:last-child h3 { color: #3b82f6; }
+    .score-controls { display: flex; align-items: center; justify-content: center; gap: 24px; margin: 20px 0; }
+    .score-val { font-family: monospace; font-size: 56px; font-weight: 900; color: var(--text); width: 60px; text-align: center; line-height: 1; }
+    .btn-score { width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--card-border); background: var(--item-bg); color: var(--text); font-size: 24px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+    .btn-score:hover { background: var(--card-border); }
+    .btn-score.plus { background: var(--primary); color: white; border: none; box-shadow: 0 4px 15px rgba(37,99,235,0.3); }
     .btn-score.plus:hover { background: var(--primary-hover); }
 
     /* Stats Table */
     table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
-    th { padding: 10px 8px; border-bottom: 1px solid var(--card-border); color: var(--text-muted); font-size: 11px; text-transform: uppercase; }
-    td { padding: 10px 8px; border-bottom: 1px solid var(--item-border); }
-    tr:hover td { background: rgba(255,255,255,0.02); }
-    .winrate-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-weight: bold; font-size: 11px; }
+    th { padding: 12px 10px; border-bottom: 1px solid var(--card-border); color: var(--text-muted); font-size: 10px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; }
+    td { padding: 12px 10px; border-bottom: 1px solid var(--item-border); font-weight: 500; }
+    tr:hover td { background: var(--item-bg); }
+    .winrate-pill { display: inline-block; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 11px; font-family: monospace; }
 
     @media (max-width: 600px) {
       .tabs { grid-template-columns: repeat(2, 1fr); }
       .match-arena { grid-template-columns: 1fr; }
+      .score-val { font-size: 40px; }
+      header h1 { font-size: 18px; }
+      .btn-score { width: 40px; height: 40px; font-size: 20px; }
     }
   </style>
 </head>
@@ -181,7 +195,7 @@
 
       <section class="card">
         <div class="quick-actions">
-          <span style="font-weight: 600; font-size: 14px;">Databáze hráčů</span>
+          <span style="font-weight: 600; font-size: 12px;">Databáze hráčů</span>
           <div>
             <a onclick="toggleAll(true)">Vybrat vše</a> | <a onclick="toggleAll(false)">Zrušit výběr</a>
           </div>
@@ -194,7 +208,7 @@
     <div id="viewGenerator" style="display: none; flex-direction: column; gap: 16px;">
       <section class="card">
         <div class="quick-actions" style="margin-bottom: 10px;">
-          <span style="font-weight: 600; font-size: 14px;">Aktivní hráči k losování</span>
+          <span style="font-weight: 600; font-size: 12px;">Aktivní hráči k losování</span>
           <a onclick="switchTab('players')">Upravit výběr →</a>
         </div>
         <div id="activePlayersList" class="team-grid"></div>
@@ -254,13 +268,13 @@
         </section>
 
         <!-- Právě probíhající zápas / Scoreboard -->
-        <section class="card" id="currentMatchCard">
+        <section class="scoreboard" id="currentMatchCard">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <div>
               <h2 id="matchTitle" style="font-size: 16px; font-weight: bold;">Zápas #1</h2>
               <span id="restingNotice" style="font-size: 12px; color: var(--text-muted);"></span>
             </div>
-            <span id="matchStatusBadge" style="font-size: 11px; padding: 3px 8px; border-radius: 999px; background: rgba(5,150,105,0.2); color: #34d399; font-weight: bold;">
+            <span id="matchStatusBadge" style="font-size: 11px; padding: 4px 10px; border-radius: 999px; background: rgba(5,150,105,0.2); color: #34d399; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">
               🔴 Právě probíhá
             </span>
           </div>
@@ -275,7 +289,7 @@
           <!-- Skóre aréna -->
           <div class="match-arena">
             <div class="team-box">
-              <h3 id="teamAName" style="font-size: 15px; margin-bottom: 6px;">Tým A</h3>
+              <h3 id="teamAName" style="font-size: 15px; margin-bottom: 6px; font-weight: 700;">Tým A</h3>
               <div class="score-controls">
                 <button class="btn-score" onclick="changeScore('A', -1)">-</button>
                 <span class="score-val" id="scoreA">0</span>
@@ -287,7 +301,7 @@
             <span style="font-size: 14px; font-weight: bold; color: var(--text-muted);">VS</span>
 
             <div class="team-box">
-              <h3 id="teamBName" style="font-size: 15px; margin-bottom: 6px;">Tým B</h3>
+              <h3 id="teamBName" style="font-size: 15px; margin-bottom: 6px; font-weight: 700;">Tým B</h3>
               <div class="score-controls">
                 <button class="btn-score" onclick="changeScore('B', -1)">-</button>
                 <span class="score-val" id="scoreB">0</span>
@@ -297,8 +311,8 @@
             </div>
           </div>
 
-          <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-            <button class="btn-generate" style="width: auto; padding: 9px 18px;" onclick="finishCurrentMatch()">
+          <div style="margin-top: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <button class="btn-generate" style="width: auto; padding: 10px 20px; font-size: 13px;" onclick="finishCurrentMatch()">
               ✅ Ukončit zápas & Zapsat do statistik
             </button>
             <button class="timer-btn" onclick="addNextRound()">➕ Přidat další zápas</button>
@@ -318,7 +332,7 @@
       <section class="card">
         <div class="quick-actions" style="margin-bottom: 12px;">
           <div>
-            <h2 style="font-size: 16px; font-weight: bold;">📊 Dlouhodobé statistiky hráčů</h2>
+            <h2 style="font-size: 16px; font-weight: bold; text-transform: none; letter-spacing: normal;">📊 Dlouhodobé statistiky hráčů</h2>
             <span style="font-size: 11px; color: var(--text-muted);">Z = Zápasy | V = Výhry | R = Remízy | P = Prohry | Winrate = % výher</span>
           </div>
           <button class="btn-delete" style="font-size: 11px;" onclick="resetAllStats()">Vynulovat statistiky</button>
@@ -685,10 +699,10 @@
           <div class="player-item ${p.active ? 'active' : ''}">
             <label class="player-info">
               <input type="checkbox" ${p.active ? 'checked' : ''} onchange="togglePlayer(${i})">
-              <span style="font-weight: 500;">${p.name}</span>
+              <span style="font-weight: 600;">${p.name}</span>
             </label>
             <div class="player-actions">
-              <span style="font-size: 12px; color: var(--text-muted);">Rating:</span>
+              <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Rating:</span>
               ${renderRatingOptions(p.rating, `updateRating(${i}, this.value)`)}
               <button class="btn-delete" onclick="deletePlayer(${i})">Smazat</button>
             </div>
@@ -705,8 +719,8 @@
         activeList.innerHTML = players.map((p, i) => {
           if (!p.active) return '';
           return `
-            <div style="background: var(--item-bg); border: 1px solid var(--item-border); padding: 8px 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-weight: 500; font-size: 13px;">${p.name}</span>
+            <div style="background: var(--item-bg); border: 1px solid var(--item-border); padding: 10px 14px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 600; font-size: 14px;">${p.name}</span>
               ${renderRatingOptions(p.rating, `updateRating(${i}, this.value)`)}
             </div>
           `;
@@ -725,7 +739,7 @@
             <div class="team-header">
               <div>
                 <h3>${team.name}</h3>
-                <span style="font-size: 11px; color: var(--text-muted);">${team.players.length} hráči</span>
+                <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">${team.players.length} hráči</span>
               </div>
               <span class="team-total">Celkem: ${team.totalRating.toFixed(1)}</span>
             </div>
@@ -733,7 +747,7 @@
               ${team.players.map(p => `
                 <li>
                   <span>${p.name}</span>
-                  <strong style="color: var(--accent);">⭐ ${p.rating}</strong>
+                  <strong>⭐ ${p.rating}</strong>
                 </li>
               `).join('')}
             </ul>
@@ -792,7 +806,7 @@
               <td style="text-align:center;">${row.p}</td>
               <td style="text-align:center; color: #34d399;">${row.w}</td>
               <td style="text-align:center; color: var(--text-muted);">${row.d}</td>
-              <td style="text-align:center; color: #f87171;">${row.l}</td>
+              <td style="text-align:center; color: #ef4444;">${row.l}</td>
               <td style="text-align:center;">${row.gf}:${row.ga}</td>
               <td style="text-align:center;"><strong>${row.pts} b</strong></td>
             </tr>
@@ -803,13 +817,13 @@
 
         // Seznam zápasů
         document.getElementById("matchHistoryList").innerHTML = matches.map((m, idx) => `
-          <div style="display:flex; justify-content:space-between; align-items:center; background:var(--item-bg); padding:10px 12px; border-radius:8px; border:1px solid ${idx === activeMatchIndex ? 'var(--primary)' : 'var(--item-border)'};">
+          <div style="display:flex; justify-content:space-between; align-items:center; background:var(--item-bg); padding:12px 14px; border-radius:10px; border:1px solid ${idx === activeMatchIndex ? 'var(--primary)' : 'var(--item-border)'};">
             <div>
-              <span style="font-weight:bold; font-size:12px; margin-right:8px;">#${m.num}</span>
-              <span style="font-size:13px;">${m.teamA.name} <strong>${m.scoreA} : ${m.scoreB}</strong> ${m.teamB.name}</span>
-              ${m.resting ? `<div style="font-size:11px; color:var(--text-muted);">Odpočívá: ${m.resting}</div>` : ''}
+              <span style="font-weight:bold; font-size:12px; margin-right:8px; color:var(--primary);">#${m.num}</span>
+              <span style="font-size:14px;">${m.teamA.name} <strong style="font-family:monospace; font-size:16px; margin: 0 4px;">${m.scoreA}:${m.scoreB}</strong> ${m.teamB.name}</span>
+              ${m.resting ? `<div style="font-size:11px; color:var(--text-muted); margin-top: 4px;">Odpočívá: ${m.resting}</div>` : ''}
             </div>
-            <button class="timer-btn" style="padding:4px 8px; font-size:11px;" onclick="setActiveMatch(${idx})">
+            <button class="timer-btn" style="padding:6px 10px; font-size:11px;" onclick="setActiveMatch(${idx})">
               ${idx === activeMatchIndex ? 'Aktuální' : 'Zvolit'}
             </button>
           </div>
@@ -828,8 +842,9 @@
       document.getElementById("playerStatsBody").innerHTML = statsList.map((p, idx) => {
         const s = p.stats || { matches: 0, wins: 0, draws: 0, losses: 0 };
         const winrate = s.matches > 0 ? Math.round((s.wins / s.matches) * 100) : 0;
-        const pillBg = s.matches === 0 ? 'rgba(148,163,184,0.1)' : winrate >= 50 ? 'rgba(5,150,105,0.2)' : 'rgba(217,119,6,0.2)';
-        const pillColor = s.matches === 0 ? 'var(--text-muted)' : winrate >= 50 ? '#34d399' : '#fbbf24';
+        const pillBg = s.matches === 0 ? 'rgba(161,161,170,0.1)' : winrate >= 50 ? 'rgba(6,78,59,0.5)' : 'rgba(239,68,68,0.1)';
+        const pillColor = s.matches === 0 ? 'var(--text-muted)' : winrate >= 50 ? '#34d399' : '#ef4444';
+        const pillBorder = s.matches === 0 ? 'transparent' : winrate >= 50 ? 'rgba(5,150,105,0.3)' : 'rgba(239,68,68,0.3)';
 
         return `
           <tr>
@@ -839,9 +854,9 @@
             <td style="text-align:center; font-weight:bold;">${s.matches}</td>
             <td style="text-align:center; color: #34d399; font-weight:bold;">${s.wins}</td>
             <td style="text-align:center; color: var(--text-muted);">${s.draws}</td>
-            <td style="text-align:center; color: #f87171;">${s.losses}</td>
+            <td style="text-align:center; color: #ef4444;">${s.losses}</td>
             <td style="text-align:center;">
-              <span class="winrate-pill" style="background:${pillBg}; color:${pillColor};">
+              <span class="winrate-pill" style="background:${pillBg}; color:${pillColor}; border: 1px solid ${pillBorder}">
                 ${s.matches > 0 ? `${winrate} %` : '-'}
               </span>
             </td>
