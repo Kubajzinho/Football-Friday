@@ -1,857 +1,1274 @@
-<!DOCTYPE html>
-<html lang="cs">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Friday Football</title>
-  <style>
-    :root {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --card-border: #334155;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --input-bg: #0b1120;
-      --input-border: #334155;
-      --item-bg: #0f172a;
-      --item-border: #1e293b;
-      --item-active-bg: rgba(37, 99, 235, 0.18);
-      --item-active-border: #2563eb;
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
-      --accent: #f59e0b;
-      --green-bg: rgba(5, 150, 105, 0.15);
-      --green-text: #34d399;
-      --green-border: rgba(5, 150, 105, 0.3);
-      --table-header: #1e293b;
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import {
+  Users,
+  Plus,
+  Trash2,
+  Shuffle,
+  Shield,
+  Trophy,
+  Activity,
+  Star,
+  RefreshCw,
+  Clock,
+  Play,
+  Pause,
+  RotateCcw,
+  CheckCircle2,
+  TrendingUp,
+  Share2,
+  Check,
+  Volume2,
+  VolumeX,
+  Timer,
+  Hourglass,
+  Sun,
+  Moon,
+  Send,
+  Download,
+  Upload,
+  Info,
+  X,
+  Calendar,
+  AlertCircle
+} from 'lucide-react';
+
+// ==========================================
+// 1. TYPY A ROZHRANÍ
+// ==========================================
+export interface PlayerStats {
+  matches: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goalsFor?: number;
+  goalsAgainst?: number;
+}
+
+export interface Player {
+  id: string;
+  name: string;
+  rating: number;
+  active: boolean;
+  stats?: PlayerStats;
+}
+
+export interface GeneratedTeam {
+  id: string;
+  name: string;
+  players: Player[];
+  totalRating: number;
+}
+
+export type MatchStatus = 'upcoming' | 'in_progress' | 'finished';
+
+export interface Match {
+  id: string;
+  matchNumber: number;
+  teamAId: string;
+  teamAName: string;
+  teamBId: string;
+  teamBName: string;
+  teamAScore: number;
+  teamBScore: number;
+  status: MatchStatus;
+  restingTeamName?: string;
+  kickoffAt?: string;
+  startedAt?: string;
+  finishedAt?: string;
+  durationSeconds?: number;
+  teamAPlayerIds: string[];
+  teamBPlayerIds: string[];
+}
+
+export interface AppStateData {
+  players: Player[];
+  teams: GeneratedTeam[];
+  matches: Match[];
+  exportedAt?: string;
+  version?: number;
+}
+
+type ActiveTab = 'players' | 'generator' | 'matches' | 'stats';
+
+const RATING_OPTIONS = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+
+const INITIAL_PLAYERS: Player[] = [
+  { id: 'p-1', name: 'Petr', rating: 4.5, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
+  { id: 'p-2', name: 'Honza', rating: 4.0, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
+  { id: 'p-3', name: 'Michal', rating: 3.5, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
+  { id: 'p-4', name: 'Tomáš', rating: 3.5, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
+  { id: 'p-5', name: 'David', rating: 3.0, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
+  { id: 'p-6', name: 'Lukáš', rating: 3.0, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
+  { id: 'p-7', name: 'Martin', rating: 2.5, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
+  { id: 'p-8', name: 'Jakub', rating: 2.5, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
+  { id: 'p-9', name: 'Ondra', rating: 2.0, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
+  { id: 'p-10', name: 'Filip', rating: 2.0, active: true, stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 } },
+];
+
+// ==========================================
+// 2. ZVUKOVÉ EFEKTY (WEB AUDIO API)
+// ==========================================
+class SoundEffects {
+  private audioCtx: AudioContext | null = null;
+
+  private getContext(): AudioContext | null {
+    if (typeof window === 'undefined') return null;
+    if (!this.audioCtx) {
+      const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtxClass) this.audioCtx = new AudioCtxClass();
     }
-
-    body.light {
-      --bg: #f1f5f9;
-      --card-bg: #ffffff;
-      --card-border: #e2e8f0;
-      --text: #0f172a;
-      --text-muted: #64748b;
-      --input-bg: #ffffff;
-      --input-border: #cbd5e1;
-      --item-bg: #f8fafc;
-      --item-border: #e2e8f0;
-      --item-active-bg: #eff6ff;
-      --item-active-border: #bfdbfe;
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
-      --accent: #d97706;
-      --green-bg: #ecfdf5;
-      --green-text: #047857;
-      --green-border: #a7f3d0;
-      --table-header: #f8fafc;
+    if (this.audioCtx && this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume().catch(() => {});
     }
+    return this.audioCtx;
+  }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding: 20px 12px; transition: background 0.2s, color 0.2s; }
-    .container { max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
-    .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
-    
-    .header-content { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    header h1 { font-size: 22px; color: var(--text); display: flex; align-items: center; gap: 8px; }
-    header p { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
-    
-    .btn-theme { background: var(--item-bg); border: 1px solid var(--card-border); color: var(--text); padding: 7px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
-    .btn-theme:hover { background: var(--card-border); }
+  playWhistle() {
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
 
-    .tabs { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--card-bg); padding: 5px; border-radius: 12px; border: 1px solid var(--card-border); gap: 4px; }
-    .tab-btn { padding: 9px 6px; border: none; background: transparent; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: all 0.2s; white-space: nowrap; }
-    .tab-btn.active { background: var(--primary); color: #ffffff; }
-    .tab-btn:not(.active):hover { color: var(--text); background: var(--item-bg); }
-    .badge { font-size: 10px; padding: 2px 6px; border-radius: 999px; background: var(--card-border); color: var(--text); }
-    .tab-btn.active .badge { background: rgba(0,0,0,0.3); color: #ffffff; }
+      const playBurst = (startTime: number, duration: number) => {
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const lfo = ctx.createOscillator();
+        const lfoGain = ctx.createGain();
 
-    .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-    input[type="text"] { flex: 1; min-width: 160px; padding: 9px 12px; background: var(--input-bg); color: var(--text); border: 1px solid var(--input-border); border-radius: 8px; font-size: 14px; outline: none; }
-    input[type="text"]:focus { border-color: var(--primary); }
-    select { padding: 8px 10px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--input-bg); color: var(--text); font-size: 13px; cursor: pointer; }
-    .btn-primary { padding: 9px 16px; background: var(--primary); color: #ffffff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-generate { width: 100%; padding: 12px; background: #059669; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
-    .btn-generate:hover { background: #047857; }
+        lfo.frequency.setValueAtTime(32, startTime);
+        lfoGain.gain.setValueAtTime(60, startTime);
+        lfo.connect(osc1.frequency);
+        lfo.connect(osc2.frequency);
 
-    .player-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; }
-    .player-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-radius: 8px; background: var(--item-bg); border: 1px solid var(--item-border); }
-    .player-item.active { background: var(--item-active-bg); border-color: var(--item-active-border); }
-    .player-info { display: flex; align-items: center; gap: 10px; cursor: pointer; flex: 1; }
-    .player-actions { display: flex; align-items: center; gap: 8px; }
-    .btn-delete { background: rgba(220, 38, 38, 0.15); color: #f87171; border: 1px solid rgba(220, 38, 38, 0.3); padding: 5px 9px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
-    .btn-delete:hover { background: rgba(220, 38, 38, 0.3); }
+        osc1.type = 'sine';
+        osc2.type = 'triangle';
+        osc1.frequency.setValueAtTime(2450, startTime);
+        osc2.frequency.setValueAtTime(2750, startTime);
 
-    .alert { padding: 12px; border-radius: 8px; background: rgba(217, 119, 6, 0.15); border: 1px solid rgba(217, 119, 6, 0.3); color: #fbbf24; font-size: 13px; margin-bottom: 12px; text-align: center; }
-    .team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 12px; }
-    .team-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 14px; }
-    .team-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 8px; margin-bottom: 8px; }
-    .team-header h3 { font-size: 16px; color: var(--text); }
-    .team-total { font-size: 12px; font-weight: bold; background: var(--green-bg); color: var(--green-text); padding: 2px 8px; border-radius: 999px; border: 1px solid var(--green-border); }
-    .team-members { list-style: none; display: flex; flex-direction: column; gap: 6px; }
-    .team-members li { font-size: 13px; display: flex; justify-content: space-between; background: var(--item-bg); border: 1px solid var(--item-border); padding: 6px 8px; border-radius: 6px; }
-    .quick-actions { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); }
-    .quick-actions a { color: var(--primary); text-decoration: none; cursor: pointer; }
-    .quick-actions a:hover { text-decoration: underline; }
-    .diff-badge { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: rgba(37, 99, 235, 0.15); color: #93c5fd; border: 1px solid rgba(37, 99, 235, 0.3); }
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(0.35, startTime + 0.04);
+        gain.gain.setValueAtTime(0.35, startTime + duration - 0.05);
+        gain.gain.linearRampToValueAtTime(0, startTime + duration);
 
-    /* Scoreboard & Timer */
-    .scoreboard { background: var(--item-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; margin-top: 12px; }
-    .timer-box { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 16px; }
-    .timer-display { font-family: monospace; font-size: 26px; font-weight: bold; background: var(--card-bg); border: 1px solid var(--card-border); padding: 6px 16px; border-radius: 8px; }
-    .timer-btn { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
-    .timer-btn:hover { background: var(--card-border); }
-    
-    .match-arena { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; text-align: center; }
-    .team-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 12px; }
-    .score-controls { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0; }
-    .score-val { font-family: monospace; font-size: 32px; font-weight: bold; color: var(--primary); width: 44px; text-align: center; }
-    .btn-score { width: 34px; height: 34px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--item-bg); color: var(--text); font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .btn-score.plus { background: var(--primary); color: white; border: none; }
-    .btn-score.plus:hover { background: var(--primary-hover); }
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
 
-    /* Stats Table */
-    table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
-    th { padding: 10px 8px; border-bottom: 1px solid var(--card-border); color: var(--text-muted); font-size: 11px; text-transform: uppercase; }
-    td { padding: 10px 8px; border-bottom: 1px solid var(--item-border); }
-    tr:hover td { background: rgba(255,255,255,0.02); }
-    .winrate-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-weight: bold; font-size: 11px; }
+        lfo.start(startTime);
+        osc1.start(startTime);
+        osc2.start(startTime);
+        lfo.stop(startTime + duration);
+        osc1.stop(startTime + duration);
+        osc2.stop(startTime + duration);
+      };
 
-    @media (max-width: 600px) {
-      .tabs { grid-template-columns: repeat(2, 1fr); }
-      .match-arena { grid-template-columns: 1fr; }
-    }
-  </style>
-</head>
-<body class="">
+      playBurst(now, 0.18);
+      playBurst(now + 0.26, 0.18);
+      playBurst(now + 0.52, 0.55);
 
-  <div class="container">
-    <header class="card">
-      <div class="header-content">
-        <div>
-          <h1>⚽ Friday Football</h1>
-          <p>Správa hráčů, vyvážené týmy, sledování skóre a statistiky</p>
-        </div>
-        <button class="btn-theme" onclick="toggleTheme()" id="themeBtn">☀️ Světlý režim</button>
-      </div>
-    </header>
-
-    <!-- 4 Záložky -->
-    <div class="tabs">
-      <button class="tab-btn active" id="tabBtnPlayers" onclick="switchTab('players')">
-        👥 Hráči <span class="badge" id="badgeTotal">0</span>
-      </button>
-      <button class="tab-btn" id="tabBtnGenerator" onclick="switchTab('generator')">
-        🎲 Losování <span class="badge" id="badgeActive">0</span>
-      </button>
-      <button class="tab-btn" id="tabBtnMatches" onclick="switchTab('matches')">
-        ⏱️ Zápasy & Skóre
-      </button>
-      <button class="tab-btn" id="tabBtnStats" onclick="switchTab('stats')">
-        📊 Statistiky
-      </button>
-    </div>
-
-    <!-- ZÁLOŽKA 1: Správa hráčů -->
-    <div id="viewPlayers" style="display: flex; flex-direction: column; gap: 16px;">
-      <section class="card">
-        <h2 style="font-size: 15px;">➕ Přidat nového hráče</h2>
-        <div class="form-row">
-          <input type="text" id="playerName" placeholder="Jméno hráče" onkeydown="if(event.key==='Enter') addPlayer()">
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <label style="font-size: 13px; color: var(--text-muted);">⭐ Rating:</label>
-            <select id="playerRating">
-              <option value="0">0</option>
-              <option value="0.5">0.5</option>
-              <option value="1">1</option>
-              <option value="1.5">1.5</option>
-              <option value="2">2</option>
-              <option value="2.5">2.5</option>
-              <option value="3">3</option>
-              <option value="3.5">3.5</option>
-              <option value="4">4</option>
-              <option value="4.5">4.5</option>
-              <option value="5" selected>5</option>
-            </select>
-          </div>
-          <button class="btn-primary" onclick="addPlayer()">Přidat</button>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="quick-actions">
-          <span style="font-weight: 600; font-size: 14px;">Databáze hráčů</span>
-          <div>
-            <a onclick="toggleAll(true)">Vybrat vše</a> | <a onclick="toggleAll(false)">Zrušit výběr</a>
-          </div>
-        </div>
-        <div class="player-list" id="playerListContainer"></div>
-      </section>
-    </div>
-
-    <!-- ZÁLOŽKA 2: Losování týmů -->
-    <div id="viewGenerator" style="display: none; flex-direction: column; gap: 16px;">
-      <section class="card">
-        <div class="quick-actions" style="margin-bottom: 10px;">
-          <span style="font-weight: 600; font-size: 14px;">Aktivní hráči k losování</span>
-          <a onclick="switchTab('players')">Upravit výběr →</a>
-        </div>
-        <div id="activePlayersList" class="team-grid"></div>
-        <div style="margin-top: 10px; font-size: 12px; color: var(--text-muted);">
-          Podporované počty hráčů: <strong>6</strong> (2 týmy po 3), <strong>8</strong> (2 týmy po 4), <strong>9</strong> (3 týmy po 3).
-        </div>
-      </section>
-
-      <section class="card">
-        <div id="errorAlert" class="alert" style="display: none;"></div>
-        <button class="btn-generate" onclick="generateTeams()">🎲 Vylosovat vyvážené týmy</button>
-      </section>
-
-      <section id="resultsSection" class="card" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <h2 style="font-size: 16px;">🏆 Výsledek losování</h2>
-          <span id="ratingDiffBadge" class="diff-badge"></span>
-        </div>
-        <div class="team-grid" id="teamsContainer"></div>
-        
-        <div style="margin-top: 16px; text-align: center;">
-          <button class="btn-primary" style="padding: 10px 20px; font-size: 14px;" onclick="switchTab('matches')">
-            ⏱️ Zahájit zápasy a sledovat skóre →
-          </button>
-        </div>
-      </section>
-    </div>
-
-    <!-- ZÁLOŽKA 3: Zápasy & Skóre -->
-    <div id="viewMatches" style="display: none; flex-direction: column; gap: 16px;">
-      <div id="noMatchesNotice" class="card" style="text-align: center; padding: 30px 20px; display: none;">
-        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px;">Zatím nejsou vylosovány žádné týmy pro dnešní zápasy.</p>
-        <button class="btn-primary" onclick="switchTab('generator')">🎲 Přejít na Losování týmů</button>
-      </div>
-
-      <div id="matchesContent" style="display: flex; flex-direction: column; gap: 16px;">
-        <!-- Turnajová tabulka (při 3 týmech) -->
-        <section id="tournamentTableSection" class="card" style="display: none;">
-          <h2 style="font-size: 15px; margin-bottom: 10px;">🏆 Tabulka turnaje</h2>
-          <div style="overflow-x: auto;">
-            <table>
-              <thead>
-                <tr>
-                  <th>Poř.</th>
-                  <th>Tým</th>
-                  <th style="text-align:center;">Z</th>
-                  <th style="text-align:center;">V</th>
-                  <th style="text-align:center;">R</th>
-                  <th style="text-align:center;">P</th>
-                  <th style="text-align:center;">Skóre</th>
-                  <th style="text-align:center; font-weight:bold;">Body</th>
-                </tr>
-              </thead>
-              <tbody id="tournamentTableBody"></tbody>
-            </table>
-          </div>
-        </section>
-
-        <!-- Právě probíhající zápas / Scoreboard -->
-        <section class="card" id="currentMatchCard">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <div>
-              <h2 id="matchTitle" style="font-size: 16px; font-weight: bold;">Zápas #1</h2>
-              <span id="restingNotice" style="font-size: 12px; color: var(--text-muted);"></span>
-            </div>
-            <span id="matchStatusBadge" style="font-size: 11px; padding: 3px 8px; border-radius: 999px; background: rgba(5,150,105,0.2); color: #34d399; font-weight: bold;">
-              🔴 Právě probíhá
-            </span>
-          </div>
-
-          <!-- Stopky -->
-          <div class="timer-box">
-            <span class="timer-display" id="timerDisplay">00:00</span>
-            <button class="timer-btn" onclick="toggleTimer()" id="timerToggleBtn">Start</button>
-            <button class="timer-btn" onclick="resetTimer()">Reset</button>
-          </div>
-
-          <!-- Skóre aréna -->
-          <div class="match-arena">
-            <div class="team-box">
-              <h3 id="teamAName" style="font-size: 15px; margin-bottom: 6px;">Tým A</h3>
-              <div class="score-controls">
-                <button class="btn-score" onclick="changeScore('A', -1)">-</button>
-                <span class="score-val" id="scoreA">0</span>
-                <button class="btn-score plus" onclick="changeScore('A', 1)">+</button>
-              </div>
-              <div id="teamARoster" style="font-size: 12px; color: var(--text-muted);"></div>
-            </div>
-
-            <span style="font-size: 14px; font-weight: bold; color: var(--text-muted);">VS</span>
-
-            <div class="team-box">
-              <h3 id="teamBName" style="font-size: 15px; margin-bottom: 6px;">Tým B</h3>
-              <div class="score-controls">
-                <button class="btn-score" onclick="changeScore('B', -1)">-</button>
-                <span class="score-val" id="scoreB">0</span>
-                <button class="btn-score plus" onclick="changeScore('B', 1)">+</button>
-              </div>
-              <div id="teamBRoster" style="font-size: 12px; color: var(--text-muted);"></div>
-            </div>
-          </div>
-
-          <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-            <button class="btn-generate" style="width: auto; padding: 9px 18px;" onclick="finishCurrentMatch()">
-              ✅ Ukončit zápas & Zapsat do statistik
-            </button>
-            <button class="timer-btn" onclick="addNextRound()">➕ Přidat další zápas</button>
-          </div>
-        </section>
-
-        <!-- Seznam všech zápasů -->
-        <section class="card">
-          <h2 style="font-size: 15px; margin-bottom: 10px;">📅 Rozpis a odehrané zápasy</h2>
-          <div id="matchHistoryList" style="display: flex; flex-direction: column; gap: 8px;"></div>
-        </section>
-      </div>
-    </div>
-
-    <!-- ZÁLOŽKA 4: Statistiky hráčů -->
-    <div id="viewStats" style="display: none; flex-direction: column; gap: 16px;">
-      <section class="card">
-        <div class="quick-actions" style="margin-bottom: 12px;">
-          <div>
-            <h2 style="font-size: 16px; font-weight: bold;">📊 Dlouhodobé statistiky hráčů</h2>
-            <span style="font-size: 11px; color: var(--text-muted);">Z = Zápasy | V = Výhry | R = Remízy | P = Prohry | Winrate = % výher</span>
-          </div>
-          <button class="btn-delete" style="font-size: 11px;" onclick="resetAllStats()">Vynulovat statistiky</button>
-        </div>
-
-        <div style="overflow-x: auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>Poř.</th>
-                <th>Hráč</th>
-                <th style="text-align:center;">Rating</th>
-                <th style="text-align:center;">Z</th>
-                <th style="text-align:center; color: #34d399;">V</th>
-                <th style="text-align:center;">R</th>
-                <th style="text-align:center; color: #f87171;">P</th>
-                <th style="text-align:center;">Úspěšnost (Winrate)</th>
-              </tr>
-            </thead>
-            <tbody id="playerStatsBody"></tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-  </div>
-
-  <script>
-    const RATING_STEPS = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
-    
-    // Stav aplikace
-    let players = JSON.parse(localStorage.getItem("players") || "[]");
-    let currentTeams = JSON.parse(localStorage.getItem("active_teams") || "[]");
-    let matches = JSON.parse(localStorage.getItem("active_matches") || "[]");
-    let activeMatchIndex = 0;
-    
-    // Časomíra
-    let timerSeconds = 0;
-    let timerInterval = null;
-    let isDark = localStorage.getItem("theme") !== "light";
-
-    function applyTheme() {
-      if (isDark) {
-        document.body.classList.remove('light');
-        document.getElementById('themeBtn').textContent = "☀️ Světlý režim";
-      } else {
-        document.body.classList.add('light');
-        document.getElementById('themeBtn').textContent = "🌙 Tmavý režim";
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        try { navigator.vibrate([200, 80, 200, 80, 500]); } catch (e) {}
       }
-      localStorage.setItem("theme", isDark ? "dark" : "light");
+    } catch (err) {}
+  }
+
+  playBeep(isHigh = false) {
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(isHigh ? 1200 : 800, now);
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.2, now + 0.02);
+      gain.gain.linearRampToValueAtTime(0, now + 0.12);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.13);
+    } catch (err) {}
+  }
+}
+
+const soundEffects = new SoundEffects();
+
+// ==========================================
+// 3. POMOCNÉ FUNKCE (ZÁPASY, STATISTIKY, SDÍLENÍ)
+// ==========================================
+function calculateWinrate(stats?: PlayerStats): number {
+  if (!stats || stats.matches === 0) return 0;
+  return Math.round((stats.wins / stats.matches) * 100);
+}
+
+function balanceTeams(players: Player[], numTeams: 2 | 3): GeneratedTeam[] {
+  const active = [...players.filter((p) => p.active)].sort((a, b) => b.rating - a.rating);
+  const teamNames = ['Tým A (Modří)', 'Tým B (Červení)', 'Tým C (Zelení)'];
+  const teams: GeneratedTeam[] = Array.from({ length: numTeams }, (_, i) => ({
+    id: `team-${i + 1}`,
+    name: teamNames[i],
+    players: [],
+    totalRating: 0,
+  }));
+
+  active.forEach((player) => {
+    teams.sort((a, b) => {
+      if (a.players.length !== b.players.length) return a.players.length - b.players.length;
+      return a.totalRating - b.totalRating;
+    });
+    teams[0].players.push(player);
+    teams[0].totalRating = Number((teams[0].totalRating + player.rating).toFixed(1));
+  });
+
+  return teams;
+}
+
+function createInitialMatches(teams: GeneratedTeam[]): Match[] {
+  const nowIso = new Date().toISOString();
+  if (teams.length === 2) {
+    return [{
+      id: `match-1-${Date.now()}`,
+      matchNumber: 1,
+      teamAId: teams[0].id,
+      teamAName: teams[0].name,
+      teamBId: teams[1].id,
+      teamBName: teams[1].name,
+      teamAScore: 0,
+      teamBScore: 0,
+      status: 'in_progress',
+      kickoffAt: nowIso,
+      startedAt: nowIso,
+      teamAPlayerIds: teams[0].players.map((p) => p.id),
+      teamBPlayerIds: teams[1].players.map((p) => p.id),
+    }];
+  }
+
+  if (teams.length === 3) {
+    const [teamA, teamB, teamC] = teams;
+    return [
+      {
+        id: `match-1-${Date.now()}`,
+        matchNumber: 1,
+        teamAId: teamA.id,
+        teamAName: teamA.name,
+        teamBId: teamB.id,
+        teamBName: teamB.name,
+        teamAScore: 0,
+        teamBScore: 0,
+        status: 'in_progress',
+        restingTeamName: teamC.name,
+        kickoffAt: nowIso,
+        startedAt: nowIso,
+        teamAPlayerIds: teamA.players.map((p) => p.id),
+        teamBPlayerIds: teamB.players.map((p) => p.id),
+      },
+      {
+        id: `match-2-${Date.now()}`,
+        matchNumber: 2,
+        teamAId: teamB.id,
+        teamAName: teamB.name,
+        teamBId: teamC.id,
+        teamBName: teamC.name,
+        teamAScore: 0,
+        teamBScore: 0,
+        status: 'upcoming',
+        restingTeamName: teamA.name,
+        teamAPlayerIds: teamB.players.map((p) => p.id),
+        teamBPlayerIds: teamC.players.map((p) => p.id),
+      },
+      {
+        id: `match-3-${Date.now()}`,
+        matchNumber: 3,
+        teamAId: teamA.id,
+        teamAName: teamA.name,
+        teamBId: teamC.id,
+        teamBName: teamC.name,
+        teamAScore: 0,
+        teamBScore: 0,
+        status: 'upcoming',
+        restingTeamName: teamB.name,
+        teamAPlayerIds: teamA.players.map((p) => p.id),
+        teamBPlayerIds: teamC.players.map((p) => p.id),
+      },
+    ];
+  }
+  return [];
+}
+
+function generateNextMatchFor3Teams(existingMatches: Match[], teams: GeneratedTeam[]): Match {
+  const [teamA, teamB, teamC] = teams;
+  const matchNumber = existingMatches.length + 1;
+  const cycle = (matchNumber - 1) % 3;
+
+  let currentA = teamA;
+  let currentB = teamB;
+  let resting = teamC;
+
+  if (cycle === 1) {
+    currentA = teamB;
+    currentB = teamC;
+    resting = teamA;
+  } else if (cycle === 2) {
+    currentA = teamA;
+    currentB = teamC;
+    resting = teamB;
+  }
+
+  return {
+    id: `match-${matchNumber}-${Date.now()}`,
+    matchNumber,
+    teamAId: currentA.id,
+    teamAName: currentA.name,
+    teamBId: currentB.id,
+    teamBName: currentB.name,
+    teamAScore: 0,
+    teamBScore: 0,
+    status: 'upcoming',
+    restingTeamName: resting.name,
+    teamAPlayerIds: currentA.players.map((p) => p.id),
+    teamBPlayerIds: currentB.players.map((p) => p.id),
+  };
+}
+
+function updatePlayersWithMatchResult(players: Player[], match: Match): Player[] {
+  if (match.status !== 'finished') return players;
+  const isDraw = match.teamAScore === match.teamBScore;
+  const teamAWon = match.teamAScore > match.teamBScore;
+
+  return players.map((player) => {
+    const inTeamA = match.teamAPlayerIds.includes(player.id) || match.teamAPlayerIds.includes(player.name);
+    const inTeamB = match.teamBPlayerIds.includes(player.id) || match.teamBPlayerIds.includes(player.name);
+    if (!inTeamA && !inTeamB) return player;
+
+    const currentStats: PlayerStats = player.stats || { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 };
+    const isWinner = (inTeamA && teamAWon) || (inTeamB && !teamAWon && !isDraw);
+    const isLoser = (inTeamA && !teamAWon && !isDraw) || (inTeamB && teamAWon);
+
+    return {
+      ...player,
+      stats: {
+        matches: currentStats.matches + 1,
+        wins: currentStats.wins + (isWinner ? 1 : 0),
+        draws: currentStats.draws + (isDraw ? 1 : 0),
+        losses: currentStats.losses + (isLoser ? 1 : 0),
+        goalsFor: (currentStats.goalsFor || 0) + (inTeamA ? match.teamAScore : match.teamBScore),
+        goalsAgainst: (currentStats.goalsAgainst || 0) + (inTeamA ? match.teamBScore : match.teamAScore),
+      },
+    };
+  });
+}
+
+function removeMatchResultFromPlayers(players: Player[], match: Match): Player[] {
+  if (match.status !== 'finished') return players;
+  const isDraw = match.teamAScore === match.teamBScore;
+  const teamAWon = match.teamAScore > match.teamBScore;
+
+  return players.map((player) => {
+    const inTeamA = match.teamAPlayerIds.includes(player.id) || match.teamAPlayerIds.includes(player.name);
+    const inTeamB = match.teamBPlayerIds.includes(player.id) || match.teamBPlayerIds.includes(player.name);
+    if (!inTeamA && !inTeamB) return player;
+
+    const currentStats: PlayerStats = player.stats || { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 };
+    const isWinner = (inTeamA && teamAWon) || (inTeamB && !teamAWon && !isDraw);
+    const isLoser = (inTeamA && !teamAWon && !isDraw) || (inTeamB && teamAWon);
+
+    return {
+      ...player,
+      stats: {
+        matches: Math.max(0, currentStats.matches - 1),
+        wins: Math.max(0, currentStats.wins - (isWinner ? 1 : 0)),
+        draws: Math.max(0, currentStats.draws - (isDraw ? 1 : 0)),
+        losses: Math.max(0, currentStats.losses - (isLoser ? 1 : 0)),
+        goalsFor: Math.max(0, (currentStats.goalsFor || 0) - (inTeamA ? match.teamAScore : match.teamBScore)),
+        goalsAgainst: Math.max(0, (currentStats.goalsAgainst || 0) - (inTeamA ? match.teamBScore : match.teamAScore)),
+      },
+    };
+  });
+}
+
+function encodeAppState(data: AppStateData): string {
+  try {
+    const compact = {
+      v: 1,
+      t: Date.now(),
+      p: data.players.map((p) => ({
+        i: p.id,
+        n: p.name,
+        r: p.rating,
+        a: p.active ? 1 : 0,
+        s: p.stats
+          ? [p.stats.matches, p.stats.wins, p.stats.draws, p.stats.losses, p.stats.goalsFor || 0, p.stats.goalsAgainst || 0]
+          : [0, 0, 0, 0, 0, 0],
+      })),
+      tm: data.teams.map((tm) => ({
+        i: tm.id,
+        n: tm.name,
+        r: tm.totalRating,
+        p: tm.players.map((p) => ({ i: p.id, n: p.name, r: p.rating })),
+      })),
+      m: data.matches.map((m) => ({
+        i: m.id,
+        nr: m.matchNumber,
+        a: m.teamAId,
+        an: m.teamAName,
+        b: m.teamBId,
+        bn: m.teamBName,
+        sa: m.teamAScore,
+        sb: m.teamBScore,
+        st: m.status,
+        rt: m.restingTeamName,
+        ko: m.kickoffAt,
+        fa: m.finishedAt,
+        ds: m.durationSeconds,
+        pa: m.teamAPlayerIds,
+        pb: m.teamBPlayerIds,
+      })),
+    };
+    const jsonStr = JSON.stringify(compact);
+    const utf8Bytes = encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, (_, p1) =>
+      String.fromCharCode(parseInt(p1, 16))
+    );
+    return btoa(utf8Bytes);
+  } catch (err) {
+    return '';
+  }
+}
+
+function decodeAppState(encoded: string): AppStateData | null {
+  try {
+    const decodedUtf8 = atob(encoded);
+    const jsonStr = decodeURIComponent(
+      Array.prototype.map.call(decodedUtf8, (c: string) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
+    );
+    const compact = JSON.parse(jsonStr);
+    if (!compact || !Array.isArray(compact.p)) return null;
+
+    const players: Player[] = compact.p.map((p: any) => ({
+      id: p.i || `p-${Math.random()}`,
+      name: p.n,
+      rating: Number(p.r),
+      active: Boolean(p.a),
+      stats: p.s
+        ? {
+            matches: Number(p.s[0] || 0),
+            wins: Number(p.s[1] || 0),
+            draws: Number(p.s[2] || 0),
+            losses: Number(p.s[3] || 0),
+            goalsFor: Number(p.s[4] || 0),
+            goalsAgainst: Number(p.s[5] || 0),
+          }
+        : { matches: 0, wins: 0, draws: 0, losses: 0 },
+    }));
+
+    const teams: GeneratedTeam[] = Array.isArray(compact.tm)
+      ? compact.tm.map((t: any) => ({
+          id: t.i,
+          name: t.n,
+          totalRating: Number(t.r),
+          players: t.p.map((tp: any) => ({ id: tp.i || `p-${tp.n}`, name: tp.n, rating: Number(tp.r), active: true })),
+        }))
+      : [];
+
+    const matches: Match[] = Array.isArray(compact.m)
+      ? compact.m.map((m: any) => ({
+          id: m.i,
+          matchNumber: Number(m.nr),
+          teamAId: m.a,
+          teamAName: m.an,
+          teamBId: m.b,
+          teamBName: m.bn,
+          teamAScore: Number(m.sa),
+          teamBScore: Number(m.sb),
+          status: m.st,
+          restingTeamName: m.rt,
+          kickoffAt: m.ko,
+          finishedAt: m.fa,
+          durationSeconds: m.ds ? Number(m.ds) : undefined,
+          teamAPlayerIds: m.pa || [],
+          teamBPlayerIds: m.pb || [],
+        }))
+      : [];
+
+    return { players, teams, matches, exportedAt: new Date(compact.t || Date.now()).toISOString() };
+  } catch (err) {
+    return null;
+  }
+}
+
+function getShareUrl(data: AppStateData): string {
+  const encoded = encodeAppState(data);
+  if (!encoded) return window.location.href;
+  const baseUrl = window.location.origin + window.location.pathname;
+  return `${baseUrl}#share=${encoded}`;
+}
+
+// ==========================================
+// 4. HLAVNÍ KOMPONENTA APLIKACE
+// ==========================================
+export default function App() {
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    try {
+      const savedTheme = localStorage.getItem('theme');
+      return savedTheme ? savedTheme === 'dark' : true;
+    } catch (e) {
+      return true;
     }
+  });
 
-    function toggleTheme() {
-      isDark = !isDark;
-      applyTheme();
+  const [activeTab, setActiveTab] = useState<ActiveTab>('players');
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [sharedDataPrompt, setSharedDataPrompt] = useState<AppStateData | null>(null);
+
+  // State: Hráči
+  const [players, setPlayers] = useState<Player[]>(() => {
+    try {
+      const saved = localStorage.getItem('friday_football_players');
+      return saved ? JSON.parse(saved) : INITIAL_PLAYERS;
+    } catch (e) {
+      return INITIAL_PLAYERS;
     }
+  });
 
-    function save() {
-      localStorage.setItem("players", JSON.stringify(players));
-      localStorage.setItem("active_teams", JSON.stringify(currentTeams));
-      localStorage.setItem("active_matches", JSON.stringify(matches));
-      render();
+  const [name, setName] = useState('');
+  const [rating, setRating] = useState<number>(3);
+  const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
+  const [editRating, setEditRating] = useState<number>(3);
+
+  // State: Týmy a zápasy
+  const [numTeams, setNumTeams] = useState<2 | 3>(2);
+  const [teams, setTeams] = useState<GeneratedTeam[]>(() => {
+    try {
+      const saved = localStorage.getItem('friday_football_teams');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
     }
+  });
 
-    function switchTab(tab) {
-      document.getElementById('viewPlayers').style.display = tab === 'players' ? 'flex' : 'none';
-      document.getElementById('viewGenerator').style.display = tab === 'generator' ? 'flex' : 'none';
-      document.getElementById('viewMatches').style.display = tab === 'matches' ? 'flex' : 'none';
-      document.getElementById('viewStats').style.display = tab === 'stats' ? 'flex' : 'none';
-
-      document.getElementById('tabBtnPlayers').className = 'tab-btn ' + (tab === 'players' ? 'active' : '');
-      document.getElementById('tabBtnGenerator').className = 'tab-btn ' + (tab === 'generator' ? 'active' : '');
-      document.getElementById('tabBtnMatches').className = 'tab-btn ' + (tab === 'matches' ? 'active' : '');
-      document.getElementById('tabBtnStats').className = 'tab-btn ' + (tab === 'stats' ? 'active' : '');
-      
-      render();
+  const [matches, setMatches] = useState<Match[]>(() => {
+    try {
+      const saved = localStorage.getItem('friday_football_matches');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
     }
+  });
 
-    function addPlayer() {
-      const nameInput = document.getElementById("playerName");
-      const name = nameInput.value.trim();
-      const rating = parseFloat(document.getElementById("playerRating").value);
-      if (!name) return;
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [copiedTeams, setCopiedTeams] = useState(false);
+  const [copiedShareLink, setCopiedShareLink] = useState(false);
 
-      players.push({
-        id: "p-" + Date.now() + "-" + Math.random().toString(36).substr(2, 4),
-        name,
-        rating,
-        active: false,
-        stats: { matches: 0, wins: 0, draws: 0, losses: 0 }
-      });
-      nameInput.value = "";
-      save();
-    }
+  // State: Časomíra (Odpočet 4 min)
+  const [timerMode, setTimerMode] = useState<'countdown' | 'stopwatch'>('countdown');
+  const [timeLeft, setTimeLeft] = useState<number>(240);
+  const [secondsElapsed, setSecondsElapsed] = useState<number>(0);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [hasWhistled, setHasWhistled] = useState(false);
+  const wakeLockRef = useRef<any>(null);
 
-    function deletePlayer(index) {
-      if (confirm("Opravdu chcete smazat tohoto hráče?")) {
-        players.splice(index, 1);
-        save();
+  // Synchronizace s URL a LocalStorage
+  useEffect(() => {
+    try {
+      const hash = window.location.hash;
+      if (hash && hash.includes('share=')) {
+        const match = hash.match(/share=([^&]+)/);
+        if (match && match[1]) {
+          const shared = decodeAppState(match[1]);
+          if (shared && shared.players?.length) setSharedDataPrompt(shared);
+        }
+      }
+    } catch (e) {}
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+    if (darkMode) document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
+  }, [darkMode]);
+
+  useEffect(() => {
+    localStorage.setItem('friday_football_players', JSON.stringify(players));
+  }, [players]);
+
+  useEffect(() => {
+    localStorage.setItem('friday_football_teams', JSON.stringify(teams));
+  }, [teams]);
+
+  useEffect(() => {
+    localStorage.setItem('friday_football_matches', JSON.stringify(matches));
+  }, [matches]);
+
+  // Screen WakeLock pro mobilní telefon
+  useEffect(() => {
+    async function reqWake() {
+      if ('wakeLock' in navigator && isTimerRunning) {
+        try { wakeLockRef.current = await (navigator as any).wakeLock.request('screen'); } catch (e) {}
       }
     }
-
-    function togglePlayer(index) {
-      players[index].active = !players[index].active;
-      save();
+    if (isTimerRunning) reqWake();
+    else if (wakeLockRef.current) {
+      wakeLockRef.current.release().catch(() => {});
+      wakeLockRef.current = null;
     }
+    return () => { if (wakeLockRef.current) wakeLockRef.current.release().catch(() => {}); };
+  }, [isTimerRunning]);
 
-    function toggleAll(status) {
-      players.forEach(p => p.active = status);
-      save();
-    }
-
-    function updateRating(index, val) {
-      players[index].rating = parseFloat(val);
-      save();
-    }
-
-    function renderRatingOptions(selectedVal, onchangeStr) {
-      return `
-        <select onchange="${onchangeStr}">
-          ${RATING_STEPS.map(r => `<option value="${r}" ${r === selectedVal ? 'selected' : ''}>${r}</option>`).join('')}
-        </select>
-      `;
-    }
-
-    // Algoritmus pro hledání globálně nejlepšího rozdělení s rovnoměrnými týmy
-    function optimalTeamBalance(activePlayers, teamCount) {
-      const n = activePlayers.length;
-      const teamSize = Math.floor(n / teamCount);
-      const shuffled = [...activePlayers].sort(() => Math.random() - 0.5);
-
-      let bestPartitions = [];
-      let minDiff = Infinity;
-      let minVar = Infinity;
-      const targetMean = shuffled.reduce((sum, p) => sum + p.rating, 0) / teamCount;
-
-      function backtrack(idx, currentTeams, currentSums) {
-        if (idx === n) {
-          const maxDiff = Math.max(...currentSums) - Math.min(...currentSums);
-          const variance = currentSums.reduce((s, val) => s + Math.pow(val - targetMean, 2), 0);
-
-          if (maxDiff < minDiff - 0.001) {
-            minDiff = maxDiff;
-            minVar = variance;
-            bestPartitions = [currentTeams.map(t => [...t])];
-          } else if (Math.abs(maxDiff - minDiff) <= 0.001) {
-            if (variance < minVar - 0.001) {
-              minVar = variance;
-              bestPartitions = [currentTeams.map(t => [...t])];
-            } else if (Math.abs(variance - minVar) <= 0.001) {
-              bestPartitions.push(currentTeams.map(t => [...t]));
+  // Časovač
+  useEffect(() => {
+    let interval: any = null;
+    if (isTimerRunning) {
+      interval = setInterval(() => {
+        setSecondsElapsed((prev) => prev + 1);
+        if (timerMode === 'countdown') {
+          setTimeLeft((prev) => {
+            if (prev <= 1) {
+              if (!hasWhistled && soundEnabled) {
+                soundEffects.playWhistle();
+                setHasWhistled(true);
+              }
+              return 0;
             }
-          }
-          return;
+            if (prev <= 4 && prev > 1 && soundEnabled) {
+              soundEffects.playBeep(false);
+            }
+            return prev - 1;
+          });
         }
-
-        for (let t = 0; t < teamCount; t++) {
-          if (currentTeams[t].length < teamSize) {
-            currentTeams[t].push(idx);
-            currentSums[t] += shuffled[idx].rating;
-
-            backtrack(idx + 1, currentTeams, currentSums);
-
-            currentTeams[t].pop();
-            currentSums[t] -= shuffled[idx].rating;
-
-            if (currentTeams[t].length === 0) break;
-          }
-        }
-      }
-
-      backtrack(0, Array.from({ length: teamCount }, () => []), new Array(teamCount).fill(0));
-
-      const chosen = bestPartitions[Math.floor(Math.random() * bestPartitions.length)];
-      const colors = ['Červení', 'Modří', 'Zelení'];
-
-      return chosen.map((indices, idx) => {
-        const teamPlayers = indices.map(i => shuffled[i]).sort((a, b) => b.rating - a.rating);
-        const total = teamPlayers.reduce((s, p) => s + p.rating, 0);
-        return {
-          id: `team-${idx}`,
-          name: `Tým ${String.fromCharCode(65 + idx)} (${colors[idx] || ''})`,
-          players: teamPlayers,
-          totalRating: Math.round(total * 10) / 10
-        };
-      }).sort((a, b) => b.totalRating - a.totalRating);
+      }, 1000);
     }
+    return () => { if (interval) clearInterval(interval); };
+  }, [isTimerRunning, timerMode, soundEnabled, hasWhistled]);
 
-    function generateTeams() {
-      const errBox = document.getElementById("errorAlert");
-      const active = players.filter(p => p.active);
-      const count = active.length;
-      let teamCount = 0;
+  const formatTime = (totalSec: number) => {
+    const mins = Math.floor(totalSec / 60);
+    const secs = totalSec % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
-      if (count === 6 || count === 8) teamCount = 2;
-      else if (count === 9) teamCount = 3;
-      else {
-        errBox.style.display = "block";
-        errBox.textContent = `Vyberte přesně 6, 8 nebo 9 hráčů (aktuálně vybráno: ${count}).`;
-        return;
-      }
+  const formatDateTime = (isoString?: string) => {
+    if (!isoString) return '';
+    try {
+      const date = new Date(isoString);
+      return `${date.getDate()}.${date.getMonth() + 1}. ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    } catch (e) {
+      return '';
+    }
+  };
 
-      errBox.style.display = "none";
-      currentTeams = optimalTeamBalance(active, teamCount);
+  // Správa hráčů
+  const addPlayer = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setPlayers((prev) => [
+      ...prev,
+      {
+        id: `player-${Date.now()}`,
+        name: trimmed,
+        rating,
+        active: true,
+        stats: { matches: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
+      },
+    ]);
+    setName('');
+  };
 
-      // Vytvoření rozpisu zápasů
-      matches = [];
-      if (teamCount === 2) {
-        matches.push({
-          num: 1,
-          teamA: currentTeams[0],
-          teamB: currentTeams[1],
-          scoreA: 0,
-          scoreB: 0,
-          status: 'in_progress'
-        });
-      } else if (teamCount === 3) {
-        // Rotace 3 týmů
-        matches.push(
-          { num: 1, teamA: currentTeams[0], teamB: currentTeams[1], resting: currentTeams[2].name, scoreA: 0, scoreB: 0, status: 'in_progress' },
-          { num: 2, teamA: currentTeams[1], teamB: currentTeams[2], resting: currentTeams[0].name, scoreA: 0, scoreB: 0, status: 'upcoming' },
-          { num: 3, teamA: currentTeams[0], teamB: currentTeams[2], resting: currentTeams[1].name, scoreA: 0, scoreB: 0, status: 'upcoming' }
+  const togglePlayerActive = (id: string) => {
+    setPlayers((prev) => prev.map((p) => (p.id === id ? { ...p, active: !p.active } : p)));
+  };
+
+  const removePlayer = (id: string) => {
+    setPlayers((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  // Generování týmů
+  const handleGenerateTeams = () => {
+    const activeCount = players.filter((p) => p.active).length;
+    if (activeCount < numTeams * 2) {
+      setErrorMessage(`Pro ${numTeams} týmy potřebujete alespoň ${numTeams * 2} aktivních hráčů.`);
+      return;
+    }
+    setErrorMessage(null);
+    const generated = balanceTeams(players, numTeams);
+    setTeams(generated);
+    const initialMatches = createInitialMatches(generated);
+    setMatches(initialMatches);
+    setActiveTab('generator');
+  };
+
+  // Správa skóre a zápasů
+  const activeMatch = matches.find((m) => m.status === 'in_progress') || matches.find((m) => m.status === 'upcoming');
+
+  const updateScore = (matchId: string, team: 'A' | 'B', delta: number) => {
+    setMatches((prev) =>
+      prev.map((m) => {
+        if (m.id !== matchId) return m;
+        return {
+          ...m,
+          teamAScore: team === 'A' ? Math.max(0, m.teamAScore + delta) : m.teamAScore,
+          teamBScore: team === 'B' ? Math.max(0, m.teamBScore + delta) : m.teamBScore,
+        };
+      })
+    );
+  };
+
+  const handleFinishMatch = (matchId: string) => {
+    const match = matches.find((m) => m.id === matchId);
+    if (!match) return;
+
+    const nowIso = new Date().toISOString();
+    const finishedMatch: Match = {
+      ...match,
+      status: 'finished',
+      kickoffAt: match.kickoffAt || match.startedAt || nowIso,
+      finishedAt: nowIso,
+      durationSeconds: secondsElapsed > 0 ? secondsElapsed : match.durationSeconds,
+    };
+
+    setPlayers((prev) => updatePlayersWithMatchResult(prev, finishedMatch));
+
+    setMatches((prev) => {
+      const updated = prev.map((m) => (m.id === matchId ? finishedMatch : m));
+      const nextUpcoming = updated.find((m) => m.status === 'upcoming');
+      if (nextUpcoming) {
+        return updated.map((m) =>
+          m.id === nextUpcoming.id ? { ...m, status: 'in_progress', kickoffAt: nowIso, startedAt: nowIso } : m
         );
       }
-      activeMatchIndex = 0;
-      save();
+      return updated;
+    });
+
+    setTimeLeft(240);
+    setSecondsElapsed(0);
+    setIsTimerRunning(false);
+    setHasWhistled(false);
+  };
+
+  const handleDeleteMatch = (matchId: string) => {
+    const matchToDelete = matches.find((m) => m.id === matchId);
+    if (!matchToDelete) return;
+    if (matchToDelete.status === 'finished') {
+      setPlayers((prev) => removeMatchResultFromPlayers(prev, matchToDelete));
     }
+    setMatches((prev) => prev.filter((m) => m.id !== matchId));
+  };
 
-    // --- STOPKY & ZÁPASY ---
-    function toggleTimer() {
-      if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-        document.getElementById("timerToggleBtn").textContent = "Start";
-      } else {
-        timerInterval = setInterval(() => {
-          timerSeconds++;
-          renderTimer();
-        }, 1000);
-        document.getElementById("timerToggleBtn").textContent = "Pauza";
-      }
-    }
-
-    function resetTimer() {
-      if (timerInterval) clearInterval(timerInterval);
-      timerInterval = null;
-      timerSeconds = 0;
-      document.getElementById("timerToggleBtn").textContent = "Start";
-      renderTimer();
-    }
-
-    function renderTimer() {
-      const mins = Math.floor(timerSeconds / 60);
-      const secs = timerSeconds % 60;
-      document.getElementById("timerDisplay").textContent = 
-        `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-
-    function changeScore(team, delta) {
-      if (matches.length === 0) return;
-      const match = matches[activeMatchIndex];
-      if (!match) return;
-
-      if (team === 'A') match.scoreA = Math.max(0, match.scoreA + delta);
-      else match.scoreB = Math.max(0, match.scoreB + delta);
-      save();
-    }
-
-    function finishCurrentMatch() {
-      if (matches.length === 0) return;
-      const match = matches[activeMatchIndex];
-      if (!match || match.status === 'finished') return;
-
-      match.status = 'finished';
-
-      // Zápis do statistik hráčů
-      const isDraw = match.scoreA === match.scoreB;
-      const teamAWon = match.scoreA > match.scoreB;
-
-      players.forEach(p => {
-        if (!p.stats) p.stats = { matches: 0, wins: 0, draws: 0, losses: 0 };
-        const inA = match.teamA.players.some(tp => tp.name === p.name);
-        const inB = match.teamB.players.some(tp => tp.name === p.name);
-
-        if (inA || inB) {
-          p.stats.matches += 1;
-          if (isDraw) {
-            p.stats.draws += 1;
-          } else if ((inA && teamAWon) || (inB && !teamAWon)) {
-            p.stats.wins += 1;
-          } else {
-            p.stats.losses += 1;
-          }
-        }
-      });
-
-      resetTimer();
-
-      // Přejít na další zápas, pokud existuje
-      const nextIdx = matches.findIndex(m => m.status === 'upcoming');
-      if (nextIdx !== -1) {
-        activeMatchIndex = nextIdx;
-        matches[nextIdx].status = 'in_progress';
-      }
-
-      save();
-    }
-
-    function addNextRound() {
-      if (currentTeams.length === 2) {
-        matches.push({
-          num: matches.length + 1,
-          teamA: currentTeams[0],
-          teamB: currentTeams[1],
-          scoreA: 0,
-          scoreB: 0,
-          status: 'upcoming'
-        });
-      } else if (currentTeams.length === 3) {
-        const nextNum = matches.length + 1;
-        const pattern = (nextNum - 1) % 3;
-        let tA = currentTeams[0], tB = currentTeams[1], rest = currentTeams[2].name;
-        if (pattern === 1) { tA = currentTeams[1]; tB = currentTeams[2]; rest = currentTeams[0].name; }
-        else if (pattern === 2) { tA = currentTeams[0]; tB = currentTeams[2]; rest = currentTeams[1].name; }
-
-        matches.push({
-          num: nextNum,
-          teamA: tA,
-          teamB: tB,
-          resting: rest,
-          scoreA: 0,
-          scoreB: 0,
-          status: 'upcoming'
-        });
-      }
-      save();
-    }
-
-    function setActiveMatch(idx) {
-      activeMatchIndex = idx;
-      render();
-    }
-
-    function resetAllStats() {
-      if (confirm("Opravdu chcete vynulovat všechny odehrané zápasy a statistiky hráčů?")) {
-        players.forEach(p => {
-          p.stats = { matches: 0, wins: 0, draws: 0, losses: 0 };
-        });
-        save();
-      }
-    }
-
-    // --- HLAVNÍ RENDER FUNKCE ---
-    function render() {
-      const activeCount = players.filter(p => p.active).length;
-      document.getElementById("badgeTotal").textContent = players.length;
-      document.getElementById("badgeActive").textContent = activeCount;
-
-      // Záložka 1: Hráči
-      const list = document.getElementById("playerListContainer");
-      if (players.length === 0) {
-        list.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px; font-size: 13px;">Zatím žádní hráči. Přidejte prvního výše.</div>`;
-      } else {
-        list.innerHTML = players.map((p, i) => `
-          <div class="player-item ${p.active ? 'active' : ''}">
-            <label class="player-info">
-              <input type="checkbox" ${p.active ? 'checked' : ''} onchange="togglePlayer(${i})">
-              <span style="font-weight: 500;">${p.name}</span>
-            </label>
-            <div class="player-actions">
-              <span style="font-size: 12px; color: var(--text-muted);">Rating:</span>
-              ${renderRatingOptions(p.rating, `updateRating(${i}, this.value)`)}
-              <button class="btn-delete" onclick="deletePlayer(${i})">Smazat</button>
-            </div>
-          </div>
-        `).join('');
-      }
-
-      // Záložka 2: Výběr & Týmy
-      const activeList = document.getElementById("activePlayersList");
-      const activePlayers = players.filter(p => p.active);
-      if (activePlayers.length === 0) {
-        activeList.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 15px; grid-column: 1/-1; font-size: 13px;">Žádní vybraní hráči.</div>`;
-      } else {
-        activeList.innerHTML = players.map((p, i) => {
-          if (!p.active) return '';
-          return `
-            <div style="background: var(--item-bg); border: 1px solid var(--item-border); padding: 8px 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-weight: 500; font-size: 13px;">${p.name}</span>
-              ${renderRatingOptions(p.rating, `updateRating(${i}, this.value)`)}
-            </div>
-          `;
-        }).join('');
-      }
-
-      // Výsledky losování
-      if (currentTeams.length > 0) {
-        document.getElementById("resultsSection").style.display = "block";
-        const totals = currentTeams.map(t => t.totalRating);
-        const maxDiff = Math.max(...totals) - Math.min(...totals);
-        document.getElementById("ratingDiffBadge").textContent = `Rozdíl: ${maxDiff.toFixed(1)} ${maxDiff === 0 ? '🎯 Perfektní' : ''}`;
-
-        document.getElementById("teamsContainer").innerHTML = currentTeams.map(team => `
-          <div class="team-card">
-            <div class="team-header">
+  return (
+    <div className={`min-h-screen py-6 px-3 sm:px-6 transition-colors ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-900'}`}>
+      <div className="max-w-4xl mx-auto space-y-5">
+        {/* Banner importu sdíleného odkazu */}
+        {sharedDataPrompt && (
+          <div className="p-4 rounded-xl bg-blue-600 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🔗</span>
               <div>
-                <h3>${team.name}</h3>
-                <span style="font-size: 11px; color: var(--text-muted);">${team.players.length} hráči</span>
+                <h4 className="font-bold text-sm">Otevřen odkaz se sdílenými daty!</h4>
+                <p className="text-xs text-blue-100">
+                  Obsahuje {sharedDataPrompt.players?.length || 0} hráčů, {sharedDataPrompt.teams?.length || 0} týmů, {sharedDataPrompt.matches?.length || 0} zápasů.
+                </p>
               </div>
-              <span class="team-total">Celkem: ${team.totalRating.toFixed(1)}</span>
             </div>
-            <ul class="team-members">
-              ${team.players.map(p => `
-                <li>
-                  <span>${p.name}</span>
-                  <strong style="color: var(--accent);">⭐ ${p.rating}</strong>
-                </li>
-              `).join('')}
-            </ul>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSharedDataPrompt(null)}
+                className="px-3 py-1.5 rounded-lg bg-blue-800 text-xs font-semibold cursor-pointer"
+              >
+                Ponechat původní
+              </button>
+              <button
+                onClick={() => {
+                  setPlayers(sharedDataPrompt.players || []);
+                  setTeams(sharedDataPrompt.teams || []);
+                  setMatches(sharedDataPrompt.matches || []);
+                  setSharedDataPrompt(null);
+                  setActiveTab('matches');
+                }}
+                className="px-4 py-1.5 rounded-lg bg-white text-blue-700 text-xs font-bold shadow-xs cursor-pointer"
+              >
+                Načíst sdílená data
+              </button>
+            </div>
           </div>
-        `).join('');
-      } else {
-        document.getElementById("resultsSection").style.display = "none";
-      }
+        )}
 
-      // Záložka 3: Zápasy & Skóre
-      if (matches.length === 0) {
-        document.getElementById("noMatchesNotice").style.display = "block";
-        document.getElementById("matchesContent").style.display = "none";
-      } else {
-        document.getElementById("noMatchesNotice").style.display = "none";
-        document.getElementById("matchesContent").style.display = "flex";
+        {/* Hlavička */}
+        <header className={`rounded-xl border p-4 sm:p-5 flex items-center justify-between ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">⚽</span>
+            <h1 className="text-xl sm:text-2xl font-bold">Friday Football</h1>
+          </div>
 
-        const curMatch = matches[activeMatchIndex] || matches[0];
-        document.getElementById("matchTitle").textContent = `Zápas #${curMatch.num}`;
-        document.getElementById("restingNotice").textContent = curMatch.resting ? `⏸️ Odpočívá: ${curMatch.resting}` : '';
-        document.getElementById("matchStatusBadge").textContent = curMatch.status === 'finished' ? '✅ Dokončeno' : '🔴 Právě probíhá';
-        document.getElementById("teamAName").textContent = curMatch.teamA.name;
-        document.getElementById("teamBName").textContent = curMatch.teamB.name;
-        document.getElementById("scoreA").textContent = curMatch.scoreA;
-        document.getElementById("scoreB").textContent = curMatch.scoreB;
-        document.getElementById("teamARoster").textContent = curMatch.teamA.players.map(p => p.name).join(', ');
-        document.getElementById("teamBRoster").textContent = curMatch.teamB.players.map(p => p.name).join(', ');
-
-        // Turnajová tabulka pro 3 týmy
-        if (currentTeams.length === 3) {
-          document.getElementById("tournamentTableSection").style.display = "block";
-          const tableData = currentTeams.map(t => {
-            let p = 0, w = 0, d = 0, l = 0, gf = 0, ga = 0, pts = 0;
-            matches.forEach(m => {
-              if (m.status !== 'finished') return;
-              const inA = m.teamA.name === t.name;
-              const inB = m.teamB.name === t.name;
-              if (inA || inB) {
-                p++;
-                const myGoals = inA ? m.scoreA : m.scoreB;
-                const oppGoals = inA ? m.scoreB : m.scoreA;
-                gf += myGoals;
-                ga += oppGoals;
-                if (myGoals > oppGoals) { w++; pts += 3; }
-                else if (myGoals === oppGoals) { d++; pts += 1; }
-                else { l++; }
-              }
-            });
-            return { name: t.name, p, w, d, l, gf, ga, pts };
-          }).sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga));
-
-          document.getElementById("tournamentTableBody").innerHTML = tableData.map((row, idx) => `
-            <tr>
-              <td><strong>${idx + 1}.</strong></td>
-              <td><strong>${row.name}</strong></td>
-              <td style="text-align:center;">${row.p}</td>
-              <td style="text-align:center; color: #34d399;">${row.w}</td>
-              <td style="text-align:center; color: var(--text-muted);">${row.d}</td>
-              <td style="text-align:center; color: #f87171;">${row.l}</td>
-              <td style="text-align:center;">${row.gf}:${row.ga}</td>
-              <td style="text-align:center;"><strong>${row.pts} b</strong></td>
-            </tr>
-          `).join('');
-        } else {
-          document.getElementById("tournamentTableSection").style.display = "none";
-        }
-
-        // Seznam zápasů
-        document.getElementById("matchHistoryList").innerHTML = matches.map((m, idx) => `
-          <div style="display:flex; justify-content:space-between; align-items:center; background:var(--item-bg); padding:10px 12px; border-radius:8px; border:1px solid ${idx === activeMatchIndex ? 'var(--primary)' : 'var(--item-border)'};">
-            <div>
-              <span style="font-weight:bold; font-size:12px; margin-right:8px;">#${m.num}</span>
-              <span style="font-size:13px;">${m.teamA.name} <strong>${m.scoreA} : ${m.scoreB}</strong> ${m.teamB.name}</span>
-              ${m.resting ? `<div style="font-size:11px; color:var(--text-muted);">Odpočívá: ${m.resting}</div>` : ''}
-            </div>
-            <button class="timer-btn" style="padding:4px 8px; font-size:11px;" onclick="setActiveMatch(${idx})">
-              ${idx === activeMatchIndex ? 'Aktuální' : 'Zvolit'}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsShareModalOpen(true)}
+              className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>Sdílet</span>
+            </button>
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className={`p-2 rounded-lg border cursor-pointer ${darkMode ? 'bg-slate-800 border-slate-700 text-amber-400' : 'bg-slate-100 border-slate-200 text-slate-600'}`}
+            >
+              {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
           </div>
-        `).join('');
-      }
+        </header>
 
-      // Záložka 4: Statistiky
-      const statsList = [...players].sort((a, b) => {
-        const statsA = a.stats || { matches: 0, wins: 0 };
-        const statsB = b.stats || { matches: 0, wins: 0 };
-        const wrA = statsA.matches > 0 ? (statsA.wins / statsA.matches) : 0;
-        const wrB = statsB.matches > 0 ? (statsB.wins / statsB.matches) : 0;
-        return wrB - wrA || statsB.wins - statsA.wins;
-      });
+        {/* 4 Záložky */}
+        <nav className={`p-1.5 rounded-xl border flex gap-1 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+          <button
+            onClick={() => setActiveTab('players')}
+            className={`flex-1 py-2 rounded-lg font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
+              activeTab === 'players' ? 'bg-blue-600 text-white shadow-xs' : darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Hráči ({players.filter((p) => p.active).length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('generator')}
+            className={`flex-1 py-2 rounded-lg font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
+              activeTab === 'generator' ? 'bg-blue-600 text-white shadow-xs' : darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Shuffle className="w-4 h-4" />
+            <span>Týmy</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('matches')}
+            className={`flex-1 py-2 rounded-lg font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer transition-colors relative ${
+              activeTab === 'matches' ? 'bg-blue-600 text-white shadow-xs' : darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Clock className="w-4 h-4" />
+            <span>Zápasy & Čas</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('stats')}
+            className={`flex-1 py-2 rounded-lg font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
+              activeTab === 'stats' ? 'bg-blue-600 text-white shadow-xs' : darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Trophy className="w-4 h-4" />
+            <span>Statistiky</span>
+          </button>
+        </nav>
 
-      document.getElementById("playerStatsBody").innerHTML = statsList.map((p, idx) => {
-        const s = p.stats || { matches: 0, wins: 0, draws: 0, losses: 0 };
-        const winrate = s.matches > 0 ? Math.round((s.wins / s.matches) * 100) : 0;
-        const pillBg = s.matches === 0 ? 'rgba(148,163,184,0.1)' : winrate >= 50 ? 'rgba(5,150,105,0.2)' : 'rgba(217,119,6,0.2)';
-        const pillColor = s.matches === 0 ? 'var(--text-muted)' : winrate >= 50 ? '#34d399' : '#fbbf24';
+        {/* OBSAH ZÁLOŽEK */}
 
-        return `
-          <tr>
-            <td><strong>${idx + 1}.</strong></td>
-            <td><strong>${p.name}</strong></td>
-            <td style="text-align:center;">⭐ ${p.rating}</td>
-            <td style="text-align:center; font-weight:bold;">${s.matches}</td>
-            <td style="text-align:center; color: #34d399; font-weight:bold;">${s.wins}</td>
-            <td style="text-align:center; color: var(--text-muted);">${s.draws}</td>
-            <td style="text-align:center; color: #f87171;">${s.losses}</td>
-            <td style="text-align:center;">
-              <span class="winrate-pill" style="background:${pillBg}; color:${pillColor};">
-                ${s.matches > 0 ? `${winrate} %` : '-'}
-              </span>
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
+        {/* 1. ZÁLOŽKA: HRÁČI */}
+        {activeTab === 'players' && (
+          <section className={`rounded-xl border p-5 space-y-5 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+            <form onSubmit={addPlayer} className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                placeholder="Jméno hráče..."
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className={`flex-1 px-3 py-2 rounded-lg border text-sm focus:outline-hidden ${darkMode ? 'bg-slate-950 border-slate-700 text-white' : 'bg-white border-slate-300'}`}
+              />
+              <div className="flex gap-2">
+                <select
+                  value={rating}
+                  onChange={(e) => setRating(Number(e.target.value))}
+                  className={`px-3 py-2 rounded-lg border text-sm font-semibold cursor-pointer ${darkMode ? 'bg-slate-950 border-slate-700 text-white' : 'bg-white border-slate-300'}`}
+                >
+                  {RATING_OPTIONS.map((r) => (
+                    <option key={r} value={r}>⭐ {r.toFixed(1)}</option>
+                  ))}
+                </select>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold flex items-center gap-1 cursor-pointer shadow-xs"
+                >
+                  <Plus className="w-4 h-4" /> Přidat
+                </button>
+              </div>
+            </form>
 
-    applyTheme();
-    render();
-  </script>
-</body>
-</html>
+            {/* Seznam hráčů */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {players.map((p) => (
+                <div
+                  key={p.id}
+                  className={`p-3 rounded-lg border flex items-center justify-between transition-colors ${
+                    p.active
+                      ? darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
+                      : darkMode ? 'bg-slate-900/40 border-slate-800/50 opacity-50' : 'bg-slate-100 opacity-60 border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <input
+                      type="checkbox"
+                      checked={p.active}
+                      onChange={() => togglePlayerActive(p.id)}
+                      className="w-4 h-4 rounded-sm text-blue-600 cursor-pointer"
+                    />
+                    <span className="font-semibold text-sm">{p.name}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-mono ${darkMode ? 'bg-slate-800 text-amber-400' : 'bg-amber-100 text-amber-800'}`}>
+                      ⭐ {p.rating.toFixed(1)}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => removePlayer(p.id)}
+                    className="p-1.5 text-slate-400 hover:text-red-500 cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Tlačítko pro generování */}
+            <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <span>Počet týmů:</span>
+                <button
+                  type="button"
+                  onClick={() => setNumTeams(2)}
+                  className={`px-3 py-1 rounded-md text-xs font-bold cursor-pointer ${numTeams === 2 ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}
+                >
+                  2 Týmy
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNumTeams(3)}
+                  className={`px-3 py-1 rounded-md text-xs font-bold cursor-pointer ${numTeams === 3 ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}
+                >
+                  3 Týmy
+                </button>
+              </div>
+
+              <button
+                onClick={handleGenerateTeams}
+                className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md"
+              >
+                <Shuffle className="w-4 h-4" />
+                Vylosovat vyvážené týmy
+              </button>
+            </div>
+            {errorMessage && <p className="text-red-500 text-xs font-semibold">{errorMessage}</p>}
+          </section>
+        )}
+
+        {/* 2. ZÁLOŽKA: VYLOSOVANÉ TÝMY */}
+        {activeTab === 'generator' && (
+          <section className="space-y-4">
+            {teams.length === 0 ? (
+              <div className={`p-8 text-center rounded-xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                <p className="text-sm text-slate-400 mb-3">Zatím nebyly vylosovány žádné týmy.</p>
+                <button
+                  onClick={handleGenerateTeams}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold cursor-pointer"
+                >
+                  Vylosovat týmy nyní
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {teams.map((tm, idx) => (
+                  <div
+                    key={tm.id}
+                    className={`rounded-xl border p-4 space-y-3 ${
+                      idx === 0
+                        ? darkMode ? 'bg-blue-950/20 border-blue-800/40' : 'bg-blue-50/50 border-blue-200'
+                        : idx === 1
+                        ? darkMode ? 'bg-rose-950/20 border-rose-800/40' : 'bg-rose-50/50 border-rose-200'
+                        : darkMode ? 'bg-emerald-950/20 border-emerald-800/40' : 'bg-emerald-50/50 border-emerald-200'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center border-b pb-2 border-slate-800/40">
+                      <h3 className="font-bold text-sm">{tm.name}</h3>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-slate-800 text-amber-400">
+                        ⭐ {tm.totalRating.toFixed(1)}
+                      </span>
+                    </div>
+                    <ul className="space-y-1 text-xs">
+                      {tm.players.map((p) => (
+                        <li key={p.id} className="flex justify-between py-1 border-b border-slate-800/20">
+                          <span>{p.name}</span>
+                          <span className="text-slate-400">⭐ {p.rating.toFixed(1)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* 3. ZÁLOŽKA: ZÁPASY A ČASOMÍRA */}
+        {activeTab === 'matches' && (
+          <section className="space-y-5">
+            {activeMatch ? (
+              <div className={`rounded-xl border p-5 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+                {/* Časomíra & Píšťalka */}
+                <div className="flex flex-col items-center justify-center gap-3 mb-6">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1 rounded-lg border flex items-center gap-1 text-xs ${darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
+                      <button
+                        type="button"
+                        onClick={() => { setTimerMode('countdown'); setTimeLeft(240); setIsTimerRunning(false); setHasWhistled(false); }}
+                        className={`px-2.5 py-1 rounded-md font-semibold cursor-pointer ${timerMode === 'countdown' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}
+                      >
+                        Odpočet 4 min
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setTimerMode('stopwatch'); setIsTimerRunning(false); }}
+                        className={`px-2.5 py-1 rounded-md font-semibold cursor-pointer ${timerMode === 'stopwatch' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}
+                      >
+                        Stopky
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => { setSoundEnabled(!soundEnabled); if (!soundEnabled) soundEffects.playBeep(true); }}
+                      className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 cursor-pointer ${
+                        soundEnabled ? 'bg-emerald-950/40 border-emerald-800 text-emerald-300' : 'bg-slate-800 border-slate-700 text-slate-400'
+                      }`}
+                    >
+                      {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                      <span>{soundEnabled ? 'Píšťalka ZAP' : 'Píšťalka VYP'}</span>
+                    </button>
+                  </div>
+
+                  {/* Displej času */}
+                  <div className={`flex items-center gap-3 px-6 py-2.5 rounded-2xl border ${
+                    timerMode === 'countdown' && timeLeft === 0
+                      ? 'bg-red-500/20 border-red-500 text-red-500 animate-bounce'
+                      : darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
+                  }`}>
+                    <Timer className="w-5 h-5 text-blue-500" />
+                    <span className="font-mono text-3xl sm:text-4xl font-extrabold tracking-wider">
+                      {timerMode === 'countdown' ? formatTime(timeLeft) : formatTime(secondsElapsed)}
+                    </span>
+                    <div className="flex items-center gap-1 ml-2">
+                      <button
+                        onClick={() => { if (!isTimerRunning && soundEnabled) soundEffects.playBeep(true); setIsTimerRunning(!isTimerRunning); }}
+                        className={`p-2 rounded-xl border cursor-pointer ${isTimerRunning ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-600 text-white'}`}
+                      >
+                        {isTimerRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}
+                      </button>
+                      <button
+                        onClick={() => { setIsTimerRunning(false); setTimeLeft(240); setSecondsElapsed(0); setHasWhistled(false); }}
+                        className="p-2 rounded-xl border bg-slate-800 border-slate-700 text-slate-400 cursor-pointer"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Scoreboard */}
+                <div className="grid grid-cols-3 items-center text-center gap-2 py-4 border-y border-slate-800/40">
+                  <div className="space-y-2">
+                    <h3 className="font-bold text-sm sm:text-base">{activeMatch.teamAName}</h3>
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => updateScore(activeMatch.id, 'A', -1)}
+                        className="w-8 h-8 rounded-lg bg-slate-800 text-slate-200 font-bold cursor-pointer"
+                      >
+                        -
+                      </button>
+                      <span className="text-3xl font-mono font-extrabold">{activeMatch.teamAScore}</span>
+                      <button
+                        onClick={() => updateScore(activeMatch.id, 'A', 1)}
+                        className="w-8 h-8 rounded-lg bg-blue-600 text-white font-bold cursor-pointer"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="text-slate-500 font-mono text-sm font-bold">VS</div>
+
+                  <div className="space-y-2">
+                    <h3 className="font-bold text-sm sm:text-base">{activeMatch.teamBName}</h3>
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => updateScore(activeMatch.id, 'B', -1)}
+                        className="w-8 h-8 rounded-lg bg-slate-800 text-slate-200 font-bold cursor-pointer"
+                      >
+                        -
+                      </button>
+                      <span className="text-3xl font-mono font-extrabold">{activeMatch.teamBScore}</span>
+                      <button
+                        onClick={() => updateScore(activeMatch.id, 'B', 1)}
+                        className="w-8 h-8 rounded-lg bg-blue-600 text-white font-bold cursor-pointer"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <span className="text-xs text-slate-400">
+                    {activeMatch.kickoffAt && `Výkop: ${formatDateTime(activeMatch.kickoffAt)}`}
+                  </span>
+                  <button
+                    onClick={() => handleFinishMatch(activeMatch.id)}
+                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <CheckCircle2 className="w-4 h-4" /> Ukončit zápas a zapsat skóre
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className={`p-8 text-center rounded-xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                <p className="text-sm text-slate-400">Žádný aktivní zápas.</p>
+              </div>
+            )}
+
+            {/* Historie zápasů */}
+            <div className={`rounded-xl border p-4 space-y-3 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+              <h3 className="font-bold text-sm flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-blue-500" /> Historie a rozpis zápasů
+              </h3>
+              <div className="space-y-2">
+                {matches.map((m) => (
+                  <div
+                    key={m.id}
+                    className={`p-3 rounded-lg border flex items-center justify-between text-xs ${
+                      m.status === 'finished'
+                        ? darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
+                        : darkMode ? 'bg-blue-950/20 border-blue-900/40' : 'bg-blue-50 border-blue-200'
+                    }`}
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 font-semibold">
+                        <span>Zápas #{m.matchNumber}:</span>
+                        <span>{m.teamAName}</span>
+                        <span className="font-mono px-1.5 py-0.5 rounded bg-slate-800 text-white">
+                          {m.teamAScore} : {m.teamBScore}
+                        </span>
+                        <span>{m.teamBName}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-400 flex items-center gap-2">
+                        {m.kickoffAt && <span>Výkop: {formatDateTime(m.kickoffAt)}</span>}
+                        {m.durationSeconds && <span>(Délka: {formatTime(m.durationSeconds)})</span>}
+                        {m.restingTeamName && <span>• Odpočívá: {m.restingTeamName}</span>}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteMatch(m.id)}
+                      className="p-1.5 text-slate-500 hover:text-red-400 cursor-pointer"
+                      title="Smazat zápas"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* 4. ZÁLOŽKA: STATISTIKY */}
+        {activeTab === 'stats' && (
+          <section className={`rounded-xl border p-4 sm:p-5 space-y-4 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+            <h3 className="font-bold text-base flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-amber-400" /> Tabulka hráčů a úspěšnost
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left">
+                <thead className={`border-b ${darkMode ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
+                  <tr>
+                    <th className="py-2 px-3">Hráč</th>
+                    <th className="py-2 px-2 text-center">Z</th>
+                    <th className="py-2 px-2 text-center">V</th>
+                    <th className="py-2 px-2 text-center">R</th>
+                    <th className="py-2 px-2 text-center">P</th>
+                    <th className="py-2 px-2 text-center">Skóre</th>
+                    <th className="py-2 px-3 text-right">Winrate</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/40 font-mono">
+                  {[...players]
+                    .sort((a, b) => calculateWinrate(b.stats) - calculateWinrate(a.stats) || (b.stats?.wins || 0) - (a.stats?.wins || 0))
+                    .map((p, idx) => (
+                      <tr key={p.id} className={idx === 0 ? 'font-bold text-amber-400' : ''}>
+                        <td className="py-2.5 px-3 font-sans flex items-center gap-1.5">
+                          {idx === 0 && '👑'} {p.name}
+                        </td>
+                        <td className="py-2.5 px-2 text-center">{p.stats?.matches || 0}</td>
+                        <td className="py-2.5 px-2 text-center text-emerald-500">{p.stats?.wins || 0}</td>
+                        <td className="py-2.5 px-2 text-center text-slate-400">{p.stats?.draws || 0}</td>
+                        <td className="py-2.5 px-2 text-center text-rose-500">{p.stats?.losses || 0}</td>
+                        <td className="py-2.5 px-2 text-center">
+                          {p.stats?.goalsFor || 0}:{p.stats?.goalsAgainst || 0}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-bold text-blue-500">
+                          {calculateWinrate(p.stats)} %
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {/* MODÁLNÍ OKNO PRO SDÍLENÍ */}
+        {isShareModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <div className={`w-full max-w-lg rounded-2xl border p-5 space-y-4 ${darkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
+              <div className="flex items-center justify-between border-b pb-3 border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Share2 className="w-5 h-5 text-blue-500" />
+                  <h3 className="font-bold text-base">Sdílení fotbálku</h3>
+                </div>
+                <button onClick={() => setIsShareModalOpen(false)} className="p-1 cursor-pointer">
+                  <X className="w-4 h-4 text-slate-400" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-xs text-slate-400">
+                  Pošlete kamarádům odkaz. Jakmile jej otevřou na mobilu či PC, automaticky se jim načtou aktuální týmy i stav zápasů.
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={getShareUrl({ players, teams, matches })}
+                    className={`w-full px-3 py-2 text-xs rounded-lg border font-mono truncate ${darkMode ? 'bg-slate-950 border-slate-800 text-slate-300' : 'bg-slate-50 border-slate-300'}`}
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(getShareUrl({ players, teams, matches }));
+                      setCopiedShareLink(true);
+                      setTimeout(() => setCopiedShareLink(false), 2000);
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold cursor-pointer shrink-0"
+                  >
+                    {copiedShareLink ? 'Zkopírováno!' : 'Kopírovat'}
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => {
+                    const text = encodeURIComponent(`⚽ Friday Football:\n${getShareUrl({ players, teams, matches })}`);
+                    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+                  }}
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Send className="w-4 h-4" /> Poslat na WhatsApp
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
